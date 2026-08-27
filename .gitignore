@@ -298,9 +298,8 @@ config/local.*
 # FERRAMENTAS DO PROJETO
 # ==========================================
 
-# Dependências do agente OpenCode (config permanece, deps não)
-.opencode/node_modules/
-.opencode/package-lock.json
+# Agente OpenCode (ferramenta local de desenvolvimento)
+.opencode/
 
 # Arquivos temporários de sessão
 .tmp/
