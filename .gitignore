@@ -300,6 +300,8 @@ config/local.*
 
 # Agente OpenCode (ferramenta local de desenvolvimento)
 .opencode/
+opencode.json
+.harness-memory/
 
 # Arquivos temporários de sessão
 .tmp/

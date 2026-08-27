@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# commit-msg: exige Conventional Commits (Seção 6.2 proíbe mensagens genéricas).
+# Instalado por scripts/setup.sh.
+
+MSG_FILE="$1"
+MSG="$(head -n1 "$MSG_FILE")"
+
+# merge e revert automáticos passam
+case "$MSG" in
+  Merge\ *|Revert\ *) exit 0 ;;
+esac
+
+PATTERN='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([a-z0-9_-]+\))?: .{10,}$'
+
+if ! echo "$MSG" | grep -qE "$PATTERN"; then
+  echo "[commit-msg] mensagem recusada: \"$MSG\""
+  echo
+  echo "Formato: <tipo>(<escopo opcional>): <descrição com 10+ caracteres>"
+  echo "Tipos: feat fix docs style refactor test chore perf ci build revert"
+  echo "Ex.: feat(auth): adiciona login com e-mail e senha"
+  exit 1
+fi
+exit 0

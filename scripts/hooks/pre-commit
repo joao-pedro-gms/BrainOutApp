@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# pre-commit: scan de secrets nos arquivos staged + checagens rápidas.
+# Instalado por scripts/setup.sh.
+
+set -uo pipefail
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+FAIL=0
+
+# 1) Arquivos proibidos (credenciais e chaves)
+FORBIDDEN='\.jks$|\.keystore$|^google-services\.json$|/google-services\.json$|\.env$|\.pem$|\.p12$|id_rsa'
+if echo "$STAGED" | grep -qiE "$FORBIDDEN"; then
+  echo "[pre-commit] BLOQUEADO: arquivo proibido staged:"
+  echo "$STAGED" | grep -iE "$FORBIDDEN"
+  echo "Keystores, .env e chaves não entram no repositório (Seção 6.2 do documento norteador)."
+  FAIL=1
+fi
+
+# 2) Padrões de secret no conteúdo staged
+PATTERNS='(BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|ghp_[0-9A-Za-z]{36}|sk-[0-9A-Za-z]{20,}|xox[baprs]-[0-9A-Za-z-]{10,}|-----BEGIN)'
+for f in $STAGED; do
+  [ -f "$f" ] || continue
+  case "$f" in
+    scripts/hooks/*) continue ;; # os hooks definem os padrões de detecção
+  esac
+  if grep -aqEI "$PATTERNS" "$f"; then
+    echo "[pre-commit] BLOQUEADO: possível secret em $f"
+    FAIL=1
+  fi
+  # senha/token hardcoded em atribuição
+  if grep -aqEi '(password|passwd|secret|api[_-]?key|token)[[:space:]]*[:=][[:space:]]*"[^"]{6,}"' "$f" 2>/dev/null; then
+    case "$f" in
+      *.example|*.md|*test*|*Test*) ;; # exemplos e testes podem
+      *) echo "[pre-commit] ATENÇÃO: possível credencial hardcoded em $f"; FAIL=1 ;;
+    esac
+  fi
+done
+
+# 3) Lint rápido nos arquivos alterados (não bloqueia se ferramenta ausente)
+if echo "$STAGED" | grep -q '\.kt$\|\.kts$'; then
+  if [ -x "./android/gradlew" ]; then
+    (cd android && ./gradlew ktlintCheck -q) || { echo "[pre-commit] ktlint falhou"; FAIL=1; }
+  fi
+fi
+if echo "$STAGED" | grep -q '\.py$'; then
+  if command -v ruff >/dev/null 2>&1; then
+    ruff check $(echo "$STAGED" | grep '\.py$') || { echo "[pre-commit] ruff falhou"; FAIL=1; }
+  fi
+fi
+
+if [ "$FAIL" -ne 0 ]; then
+  echo "[pre-commit] commit abortado. Corrija os itens acima ou, em último caso, use --no-verify (desencorajado)."
+  exit 1
+fi
+exit 0

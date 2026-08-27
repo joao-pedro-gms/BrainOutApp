@@ -1,0 +1,43 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Título do PR segue Conventional Commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            test
+            chore
+            perf
+            ci
+            build
+            revert
+          requireScope: false
+
+  branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Branch de origem usa prefixo padrão
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if ! echo "$BRANCH" | grep -qE '^(feature|fix|docs|chore|test)/'; then
+            echo "Branch '$BRANCH' fora do padrão. Use feature/, fix/, docs/, chore/ ou test/."
+            exit 1
+          fi
+          echo "Branch '$BRANCH' ok"

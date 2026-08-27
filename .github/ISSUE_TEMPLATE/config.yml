@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "📘 Documento Norteador"
+    url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/blob/master/Documentos/Faculdade/"
+    about: "Consulte o documento norteador do Projeto Integrador antes de abrir uma issue."
