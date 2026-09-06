@@ -23,10 +23,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      # CLI direto evita a API de PRs (gitleaks-action exige pull-requests:read e falha
+      # quando o token do workflow está restrito).
+      - name: Instalar gitleaks
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: "8.24.3"
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan de secrets
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            gitleaks detect --source . --redact --verbose --exit-code 1 \
+              --log-opts="${BASE}..${HEAD}"
+          else
+            gitleaks detect --source . --redact --verbose --exit-code 1
+          fi
 
   dep-audit-backend:
     runs-on: ubuntu-latest
