@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: "📘 Documento Norteador"
-    url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/blob/master/Documentos/Faculdade/"
+    url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/tree/master/Documentos/Faculdade/"
     about: "Consulte o documento norteador (R1–R14, cronograma e Seção 6) antes de abrir uma issue."
   - name: "📋 Backlog pronto para importar"
     url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/tree/master/Documentos/backlog"

@@ -36,7 +36,7 @@ jobs:
           requireScope: false
           subjectPattern: ^.{10,}$
           subjectPatternError: |
-            O título do PR precisa de pelo menos 10 caracteres na descrição
+            O assunto (subject) do título do PR precisa de pelo menos 10 caracteres
             (além do tipo). Ex.: feat(auth): adiciona login com e-mail e senha
 
   branch-name:

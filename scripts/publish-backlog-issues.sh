@@ -4,7 +4,7 @@
 #   ./scripts/publish-backlog-issues.sh           # dry-run
 #   ./scripts/publish-backlog-issues.sh --apply    # cria no GitHub
 #
-# Requer: gh autenticado com permissão de Issues no repositório.
+# Requer: gh autenticado + python3 com PyYAML.
 
 set -euo pipefail
 
@@ -20,6 +20,16 @@ fi
 
 if ! gh auth status >/dev/null 2>&1; then
   echo "gh não autenticado. Rode: gh auth login"
+  exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 não encontrado. Instale Python 3 para processar o frontmatter YAML."
+  exit 1
+fi
+
+if ! python3 -c 'import yaml' >/dev/null 2>&1; then
+  echo "PyYAML não encontrado no python3. Instale com: python3 -m pip install pyyaml"
   exit 1
 fi
 

@@ -29,9 +29,13 @@ jobs:
         env:
           GITLEAKS_VERSION: "8.24.3"
         run: |
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            | sudo tar -xz -C /usr/local/bin gitleaks
-          gitleaks version
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+          archive="$tmpdir/gitleaks.tar.gz"
+          curl -fsSL -o "$archive" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf "$archive" -C "$tmpdir" gitleaks
+          echo "$tmpdir" >> "$GITHUB_PATH"
+          "$tmpdir/gitleaks" version
 
       - name: Scan de secrets
         run: |
