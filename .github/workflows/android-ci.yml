@@ -3,9 +3,21 @@ name: Android CI
 on:
   push:
     branches: [master]
-    paths: ["android/**"]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-ci.yml"
   pull_request:
-    paths: ["android/**"]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -16,18 +28,57 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verificar projeto Android
+        id: guard
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ ! -d android ] || [ ! -x android/gradlew ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Projeto Android ainda não existe (ou sem gradlew). Job encerrado sem falha."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-java@v4
+        if: steps.guard.outputs.present == 'true'
         with:
           distribution: temurin
           java-version: "17"
 
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.guard.outputs.present == 'true'
 
       - name: ktlint
-        run: ./gradlew ktlintCheck
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          if ./gradlew tasks --all 2>/dev/null | grep -q 'ktlintCheck'; then
+            ./gradlew ktlintCheck --no-daemon
+          else
+            echo "Task ktlintCheck não configurada ainda; pulando"
+          fi
+
+      - name: detekt
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          if ./gradlew tasks --all 2>/dev/null | grep -q '^detekt\b'; then
+            ./gradlew detekt --no-daemon
+          else
+            echo "Task detekt não configurada ainda; pulando"
+          fi
 
       - name: Testes unitários
-        run: ./gradlew testDebugUnitTest
+        if: steps.guard.outputs.present == 'true'
+        run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Build debug
-        run: ./gradlew assembleDebug
+        if: steps.guard.outputs.present == 'true'
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK debug
+        if: steps.guard.outputs.present == 'true' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 7

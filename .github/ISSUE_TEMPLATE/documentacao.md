@@ -1,6 +1,6 @@
 ---
 name: "Documentação / Engenharia"
-about: Artefatos de engenharia — documentos, diagramas, relatórios, apresentações
+about: Artefatos de engenharia — PDF, diagramas, protótipo, relatório (Apêndice A)
 title: "[DOCS] "
 labels: ["docs"]
 assignees: []
@@ -17,10 +17,32 @@ assignees: []
 - [ ] Documentação final (04/12)
 - [ ] N2 (07 a 11/12)
 
-## Escopo do artefato
-<!-- Seções exigidas — ver Apêndice A do documento norteador -->
+## Nome do arquivo (quando entrega formal)
+`PI2026-2_<NomeDaEquipe>_<Etapa>.pdf`
+
+## Escopo do artefato (checklist)
+### Conteúdo mínimo
+- [ ] 
+- [ ] 
+- [ ] Consistente com o código/protótipo atuais
+
+### Seções / diagramas esperados
+| Seção ou diagrama | Status |
+|-------------------|--------|
+| | pendente |
+
+## Fontes e rastreabilidade
+- Requisitos cobertos: <!-- R1–R14 / RF* -->
+- Issues relacionadas: #
+- Pasta no repo: `Documentos/`
 
 ## Critérios de aceite
-- [ ] Formato PDF nomeado como `PI2026-2_NomeDaEquipe_Etapa.pdf` (quando entrega formal)
+- [ ] Formato e nomenclatura corretos (entrega formal)
 - [ ] Revisado por ao menos 1 outro integrante
-- [ ] Consistente com o estado atual do repositório e do protótipo
+- [ ] Sem contradição com README, backlog e implementação
+- [ ] Versionado ou linkado no repositório (PDF em `Documentos/` ou referência clara)
+
+## Definition of Done
+- [ ] Artefato publicado no local combinado
+- [ ] Quadro do Projects atualizado
+- [ ] Mentores/docente conseguem abrir o arquivo sem pedir caminho extra

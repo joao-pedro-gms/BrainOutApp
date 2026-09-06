@@ -2,4 +2,10 @@ blank_issues_enabled: false
 contact_links:
   - name: "📘 Documento Norteador"
     url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/blob/master/Documentos/Faculdade/"
-    about: "Consulte o documento norteador do Projeto Integrador antes de abrir uma issue."
+    about: "Consulte o documento norteador (R1–R14, cronograma e Seção 6) antes de abrir uma issue."
+  - name: "📋 Backlog pronto para importar"
+    url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/tree/master/Documentos/backlog"
+    about: "Issues detalhadas por ciclo. Publique com scripts/publish-backlog-issues.sh se ainda não estiverem no tracker."
+  - name: "🛠 Guia de contribuição"
+    url: "https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/blob/master/CONTRIBUTING.md"
+    about: "Branches, Conventional Commits, PRs e quality-check."

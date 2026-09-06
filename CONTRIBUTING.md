@@ -10,7 +10,10 @@ master (protegida)
   ├── fix/<escopo>       correção de defeitos
   ├── docs/<escopo>      documentação
   ├── chore/<escopo>     configuração e infra
-  └── test/<escopo>      testes
+  ├── test/<escopo>      testes
+  ├── ci/<escopo>        pipelines e automações
+  ├── refactor/<escopo>  refatorações sem mudança de comportamento
+  └── cursor/<escopo>    branches de Cloud Agents (Cursor)
 ```
 
 1. Nada de commit direto na `master`. Código entra por pull request, revisado por outro integrante.
@@ -53,6 +56,15 @@ Configuração real vai em `local.properties` (Android) e `.env` (backend). Para
 ## Issues e quadro de tarefas
 
 Toda tarefa vira issue antes de sair do papel, com labels de ciclo, requisito (R1 a R14), tipo e prioridade. O quadro fica no GitHub Projects e precisa estar sempre atualizado, porque o docente acompanha por ali o semestre inteiro.
+
+O backlog inicial detalhado vive em [`Documentos/backlog/`](Documentos/backlog/README.md). Para publicar no GitHub Issues (conta com permissão de Issues):
+
+```bash
+./scripts/publish-backlog-issues.sh          # dry-run
+./scripts/publish-backlog-issues.sh --apply   # cria as que ainda não existem
+```
+
+Use os templates em **New issue** (Feature, Bug, Docs, Teste) — eles pedem critérios de aceite, rastreabilidade R* e Definition of Done.
 
 No fim de cada ciclo, registramos o que foi concluído, o que foi replanejado e os impedimentos (modelo do Apêndice B do documento norteador).
 

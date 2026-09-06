@@ -2,10 +2,15 @@ name: PR Checks
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
-  pull-requests: write
+  contents: read
+  pull-requests: read
 
 jobs:
   conventional-title:
@@ -29,15 +34,62 @@ jobs:
             build
             revert
           requireScope: false
+          subjectPattern: ^.{10,}$
+          subjectPatternError: |
+            O título do PR precisa de pelo menos 10 caracteres na descrição
+            (além do tipo). Ex.: feat(auth): adiciona login com e-mail e senha
 
   branch-name:
     runs-on: ubuntu-latest
     steps:
       - name: Branch de origem usa prefixo padrão
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
-          BRANCH="${{ github.head_ref }}"
-          if ! echo "$BRANCH" | grep -qE '^(feature|fix|docs|chore|test)/'; then
-            echo "Branch '$BRANCH' fora do padrão. Use feature/, fix/, docs/, chore/ ou test/."
+          # Prefixos da equipe (CONTRIBUTING.md) + cursor/ para Cloud Agents
+          if ! echo "$BRANCH" | grep -qE '^(feature|fix|docs|chore|test|ci|refactor|cursor)/'; then
+            echo "::error::Branch '$BRANCH' fora do padrão."
+            echo "Use: feature/, fix/, docs/, chore/, test/, ci/, refactor/ ou cursor/"
             exit 1
           fi
           echo "Branch '$BRANCH' ok"
+
+  quality-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar scripts de qualidade
+        run: |
+          bash -n scripts/setup.sh
+          bash -n scripts/quality-check.sh
+          bash -n scripts/hooks/pre-commit
+          bash -n scripts/hooks/commit-msg
+          if [ -f scripts/publish-backlog-issues.sh ]; then
+            bash -n scripts/publish-backlog-issues.sh
+          fi
+          echo "Sintaxe dos scripts OK"
+
+      - name: Validar YAML dos workflows
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          try:
+              import yaml
+          except ImportError:
+              import subprocess
+              subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml", "-q"])
+              import yaml
+          root = pathlib.Path(".github/workflows")
+          errors = []
+          for path in sorted(root.glob("*.yml")):
+              try:
+                  with path.open() as f:
+                      yaml.safe_load(f)
+                  print(f"OK  {path}")
+              except Exception as exc:
+                  errors.append(f"{path}: {exc}")
+                  print(f"FAIL {path}: {exc}")
+          if errors:
+              sys.exit(1)
+          PY

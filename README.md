@@ -64,7 +64,7 @@ Seguimos o cronograma do documento norteador, em 4 ciclos:
 | Congelamento | 27/11/2026 | Fim de novas funcionalidades, geração do APK |
 | N2 | 07 a 11/12 | Entrega final, documentação e mostra de projetos |
 
-O acompanhamento de tarefas fica nas [Issues](https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/issues) (cada uma mapeada aos requisitos R1-R14 do projeto) e no quadro do GitHub Projects.
+O acompanhamento de tarefas fica nas [Issues](https://github.com/joao-pedro-gms/GerenciaDeProjetosApp/issues) (cada uma mapeada aos requisitos R1-R14 do projeto) e no quadro do GitHub Projects. O backlog detalhado (18 itens prontos para importar) está em [`Documentos/backlog/`](Documentos/backlog/README.md); publique com `./scripts/publish-backlog-issues.sh --apply`.
 
 ## Documentação
 

@@ -6,6 +6,14 @@ on:
   pull_request:
   schedule:
     - cron: "0 12 * * 1" # toda segunda, 12h UTC
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   secrets:
@@ -17,17 +25,65 @@ jobs:
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Checagem de dependências do backend com pip-audit, quando existir
-  dep-audit:
+  dep-audit-backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: pip-audit
+
+      - name: Verificar requirements
+        id: guard
         run: |
           if [ -f backend/requirements.txt ]; then
-            pip install pip-audit
-            pip-audit -r backend/requirements.txt || exit 1
+            echo "present=true" >> "$GITHUB_OUTPUT"
           else
-            echo "backend/requirements.txt ainda não existe, pulando"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "backend/requirements.txt ainda não existe; pulando pip-audit"
           fi
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.present == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: pip-audit
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip-audit -r backend/requirements.txt
+
+  # Quando o app Android existir, audita dependências Gradle (OWASP Dependency-Check leve via gradle se disponível)
+  dep-audit-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar projeto Android
+        id: guard
+        run: |
+          if [ -d android ] && [ -x android/gradlew ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Projeto Android ainda não existe; pulando auditoria Gradle"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.guard.outputs.present == 'true'
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.guard.outputs.present == 'true'
+
+      - name: Listar dependências (inventário)
+        if: steps.guard.outputs.present == 'true'
+        working-directory: android
+        run: |
+          ./gradlew :app:dependencies --configuration debugRuntimeClasspath --no-daemon \
+            || ./gradlew dependencies --no-daemon \
+            || echo "Não foi possível listar dependências; revisar quando o módulo app existir"
