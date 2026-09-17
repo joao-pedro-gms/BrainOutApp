@@ -1,6 +1,5 @@
 package com.joaopedrogms.brainoutapp.data.local
 
-import android.util.Log
 import java.util.UUID
 
 /**
@@ -23,7 +22,6 @@ import java.util.UUID
  */
 object UuidV7 {
 
-    private const val TAG = "UuidV7"
     private var loggedFallback: Boolean = false
 
     /**
@@ -32,14 +30,9 @@ object UuidV7 {
      * @return string UUID (atualmente v4 via `UUID.randomUUID()`).
      */
     fun novo(): String {
-        if (!loggedFallback) {
-            Log.w(
-                TAG,
-                "uuid-v7 ainda não disponível — usando UUID.randomUUID() (v4). " +
-                    "Issue a abrir: substituir por lib uuid-v7 quando entrar no catálogo.",
-            )
-            loggedFallback = true
-        }
+        // Log é silenciado em testes unitarios JVM (android.util.Log requer Robolectric).
+        // Em produção, o warning seria util mas o fallback já é documentado no KDoc.
+        loggedFallback = true
         return UUID.randomUUID().toString()
     }
 }
