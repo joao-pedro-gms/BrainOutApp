@@ -1,0 +1,23 @@
+# Backend Python — arquivos locais (criado na issue #7)
+# Estes paths NÃO devem ser commitados.
+
+# Ambientes virtuais e caches Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Bancos locais (SQLite dev)
+*.db
+*.sqlite3
+*.sqlite3-journal
+
+# Env local (NÃO versionar; só .env.example vai pro repo)
+.env
+.env.local
+.env.*.local
