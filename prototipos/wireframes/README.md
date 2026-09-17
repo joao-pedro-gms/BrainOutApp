@@ -24,7 +24,7 @@ Wireframes estáticos de **baixa fidelidade** (estilo Balsamiq) das 6 telas do p
 ## Visualização
 
 - **[index.html](index.html)** — galeria de todas as telas
-- **GitHub Pages:** https://joao-pedro-gms.github.io/BrainOutApp/prototipos/wireframes/
+- **GitHub Pages:** https://joao-pedro-gms.github.io/BrainOutApp/
 
 ## Próximo passo
 
