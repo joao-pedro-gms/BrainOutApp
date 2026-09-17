@@ -23,8 +23,8 @@ A Seção 4 do documento norteador admite: API própria (Spring Boot, Node.js, F
 
 **Negativas:**
 - Async do FastAPI exige cuidado (misturar com sync trava event loop)
-- Postgres em produção precisa de backup/HA (decidir na N2)
+- Postgres em produção precisa de backup/HA — **estratégia será decidida em #14 antes da N2**
 
 **Mitigações:**
 - Todo o I/O usa `async def` + `AsyncSession`
-- Backup do Postgres documentado em [`dev-guide.md`](../dev-guide.md)
+- Backup do Postgres: fora do escopo do MVP; quando entrar, usar `pg_dump` agendado via cron + storage off-site (a definir na issue #14 ou na N2)

@@ -88,8 +88,9 @@ cd android
 ./gradlew testReleaseUnitTest                # testes release
 
 # 🗃️ Banco (R5)
-./gradlew :app:room.schemaLocation="$PWD/schemas"
-#   ↑ versionar schemas/ para migrations automáticas
+./gradlew :app:exportSchema -PschemasLocation="$PWD/schemas"
+#   ↑ task configurada em android/app/build.gradle.kts via
+#     ksp { arg("room.schemaLocation", ...) } — entra na issue #6
 
 # 🧹 Limpar
 ./gradlew clean

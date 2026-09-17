@@ -1,8 +1,11 @@
 # Template N2 — Relatório Técnico Final
 
-Preencher e converter para PDF (`PI2026-2_NomeDaEquipe_N2.pdf`) na entrega de 04/12. Estrutura segue Apêndice A.2 do documento norteador.
+Preencher e converter para PDF (`PI2026-2_NomeDaEquipe_N2.pdf`). Estrutura segue Apêndice A.2 do documento norteador. Issue: #24.
 
-Issue: #24.
+**Cronograma canônico (documento norteador, Seção 8):**
+
+- Entrega do PDF: **04/12**
+- Apresentação N2: **07 → 11/12**
 
 ---
 

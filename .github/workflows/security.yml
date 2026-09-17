@@ -16,15 +16,16 @@ jobs:
           fetch-depth: 0
 
       # gitleaks-action@v2 passou a exigir licença comercial; usamos a CLI oficial
-      # (open source, sem custo). Binário baixado direto do release do GitHub.
+      # (open source, sem custo). Instalada em /home/runner/work por causa de permissões.
       - name: Instalar gitleaks
         run: |
           set -euo pipefail
           VERSION="8.18.4"
           URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
           curl -sSfL "$URL" -o /tmp/gitleaks.tar.gz
-          tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
-          chmod +x /usr/local/bin/gitleaks
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          sudo chmod +x /usr/local/bin/gitleaks
           gitleaks version
 
       - name: Rodar gitleaks

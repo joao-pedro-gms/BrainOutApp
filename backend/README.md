@@ -12,12 +12,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 cd backend
 uv sync                   # cria .venv, instala deps de prod+dev via uv.lock
-uv run pytest             # roda os testes
+uv run pytest             # roda os testes (placeholder até #14)
 cp .env.example .env      # editar com seus valores
-uv run uvicorn app.main:app --reload   # API em http://localhost:8000
 ```
 
-Documentação interativa em http://localhost:8000/docs.
+> ⏳ **Servidor HTTP** (`uvicorn app.main:app`) entra na issue **#14** — o `app/main.py` atual é só um placeholder para o CI achar o módulo Python.
 
 ## Comandos úteis
 

@@ -161,8 +161,7 @@ Acompanhamento detalhado em [`docs/PLAN-IMPLEMENTACAO.md`](docs/PLAN-IMPLEMENTAC
 
 ### Status atual
 
-🟢 **Fase de concepção** (semanas 1–6) — issues e governança completas (#1 a #5 ✅ no checklist da #4).  
-🔵 **Código começa no Ciclo 1** (#6 — esqueleto Android).
+🟢 **Fase de concepção** (semanas 1–6) — issues de governança escritas (#1 a #5), templates/labels/milestones/hooks/CI prontos. **Código começa no Ciclo 1** (#6 — esqueleto Android). Issue #4 tem checklist parcial a fechar até a primeira aula de implementação.
 
 ---
 

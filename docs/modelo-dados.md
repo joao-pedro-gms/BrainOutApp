@@ -31,14 +31,17 @@ erDiagram
     TAREFA {
         uuid id PK
         uuid projeto_id FK
+        uuid dependente_id FK "self-ref: tarefa da qual depende (RN01)"
         string titulo
         text descricao
         uuid responsavel_id FK
         enum prioridade "baixa|media|alta"
         enum status "aberta|em_andamento|concluida|cancelada"
         date prazo
+        bigint server_version "controle de conflito no sync (R6)"
         timestamp created_at
         timestamp updated_at
+        timestamp deleted_at "soft delete (R5)"
     }
 ```
 
@@ -49,6 +52,14 @@ erDiagram
 - **Timestamps** em UTC; conversão no cliente
 - **Enums** como string no banco (legibilidade, migrations simples)
 - **FK com `ON DELETE RESTRICT`** em Tarefa→Projeto (regra RN02: não excluir projeto com tarefas abertas)
+- **`server_version` (bigint)** em toda entidade — incremento a cada update no servidor; cliente usa para detectar conflitos no sync
+- **RN01 (`dependente_id`)** — auto-relacionamento Tarefa→Tarefa; tarefas sem dependência (NULL) sempre podem ser concluídas
+
+## Escopo de cada issue (rastreabilidade R* ↔ modelo)
+
+- **RN01 — dependência entre tarefas**: implementada em #11, **usa o campo `dependente_id`** que está no ER acima
+- **R5 (offline + sync)** — soft delete + `server_version` cobrem o caso
+- **R6 (sync pull-push)** — `server_version` é a fonte da verdade para o conflito server-wins
 
 ## Migrations
 

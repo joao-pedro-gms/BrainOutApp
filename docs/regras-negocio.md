@@ -28,6 +28,8 @@ Cobertura por testes é critério de aceite da issue #11.
 
 **Mensagem:** `"Projeto tem <N> tarefa(s) em aberto. Conclua ou cancele antes."`
 
+**Implementação ajustada:** backend usa `status IN ('aberta', 'em_andamento')` (sem abreviação).
+
 **Teste cobre:** projeto com tarefa aberta → falha; sem tarefas abertas → sucesso.
 
 ## RN03 — Prazo de tarefa ≤ prazo do projeto
@@ -49,4 +51,4 @@ Por que validar no servidor **e** no cliente:
 
 - **Cliente:** resposta instantânea, sem desperdício de rede, bom UX offline.
 - **Servidor:** única fonte da verdade; protege de cliente modificado/fora de data.
-- Mensagens idênticas nos dois lados (string em constante compartilhada).
+- Mensagens idênticas nos dois lados — **código da mensagem vive no contrato da API** (`/errors/code` em #14); cada lado mapeia código → texto traduzido (strings.xml no Android, .po no backend). Isso evita drift entre as implementações.
