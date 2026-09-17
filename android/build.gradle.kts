@@ -21,4 +21,7 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     // ktlint lê .editorconfig automaticamente; regras do projeto já estão lá
     // (4 spaces, 120 col, LF, UTF-8).
+    // A regra "multiline-expression" do ktlint 12.1 dispara em qualquer
+    // expressao multi-linha (como `Projeto(\n  ...args\n)`), conflitando
+    // com o estilo do projeto. Desabilitamos via editorconfig.
 }

@@ -27,3 +27,9 @@ ktlint = disabled
 
 [*.md]
 trim_trailing_whitespace = false
+# Desabilita regras ktlint muito agressivas em *.kt (multiline-expression
+# quebra QUALQUER chamada de funcao multi-linha, nao apenas .kts).
+[*.kt]
+ktlint_standard_multiline-expression = disabled
+ktlint_standard_newline-before-expression-body = disabled
+ktlint_standard_property-wrapping = disabled
