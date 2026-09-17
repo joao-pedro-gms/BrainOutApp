@@ -122,6 +122,7 @@ fun TarefaFormScreen(
                 onPrioridadeChange = viewModel::onPrioridadeChange,
                 onStatusChange = viewModel::onStatusChange,
                 onResponsavelChange = viewModel::onResponsavelChange,
+                onDependenciasChange = viewModel::onDependenciasChange,
                 onSalvar = viewModel::salvar,
                 onCancelar = onVoltar,
             )
@@ -142,6 +143,7 @@ private fun Formulario(
     onPrioridadeChange: (PrioridadeTarefa) -> Unit,
     onStatusChange: (StatusTarefa) -> Unit,
     onResponsavelChange: (String) -> Unit,
+    onDependenciasChange: (String) -> Unit,
     onSalvar: () -> Unit,
     onCancelar: () -> Unit,
 ) {
@@ -221,6 +223,31 @@ private fun Formulario(
             label = { Text("Responsável (opcional)") },
             singleLine = true,
             enabled = !state.submetendo,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // Campo "dependências" — RN01. UX simples desta lane: textarea
+        // com uma id por linha. Chips + autocomplete seriam melhor UX,
+        // mas fogem do escopo da lane (issue #11). O placeholder sugere
+        // onde encontrar a id (tela de detalhes da tarefa).
+        OutlinedTextField(
+            value = state.dependenciasTexto,
+            onValueChange = onDependenciasChange,
+            label = { Text("Dependências (RN01)") },
+            placeholder = {
+                Text("Cole aqui os ids das tarefas que bloqueiam esta (uma por linha).")
+            },
+            isError = state.dependenciasError != null,
+            supportingText = {
+                if (state.dependenciasError != null) {
+                    Text(state.dependenciasError)
+                } else {
+                    Text("Vazio = sem dependências. Concluir esta tarefa exige todas concluídas.")
+                }
+            },
+            enabled = !state.submetendo,
+            minLines = 2,
+            maxLines = 6,
             modifier = Modifier.fillMaxWidth(),
         )
 

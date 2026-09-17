@@ -62,4 +62,13 @@ interface ProjetoDao {
      */
     @Query("SELECT * FROM projetos WHERE deleted_at IS NULL ORDER BY updated_at DESC")
     suspend fun getAllOnce(): List<ProjetoEntity>
+
+    /**
+     * Snapshot único de vários projetos pelos ids (ativos). Usado pelo
+     * [com.joaopedrogms.brainoutapp.domain.repository.ProjetoRepository]
+     * (lane RN01-RN03). Ids inexistentes são ignorados. Lista vazia
+     * retorna lista vazia sem bater no banco.
+     */
+    @Query("SELECT * FROM projetos WHERE id IN (:ids) AND deleted_at IS NULL")
+    suspend fun getByIdsOnce(ids: List<String>): List<ProjetoEntity>
 }

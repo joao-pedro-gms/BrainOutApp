@@ -17,8 +17,9 @@ import androidx.room.PrimaryKey
  *    > precisa mudar quando a lib entrar.
  *  - `projeto_id` (String, FK → `projetos.id`):
  *     - `onDelete = RESTRICT` (RN02 — não excluir projeto com tarefas em
- *        aberto). Esta lane **não** implementa RN02 (RN01-03 ficam para a
- *        lane de regras de negócio); o FK é só o **contrato do banco**.
+ *        aberto). O FK é só o **contrato do banco**; a checagem semântica
+ *        "tarefa aberta?" (RN02) mora no [com.joaopedrogms.brainoutapp
+ *        .domain.usecase.ConcluirProjetoUseCase].
  *     - `onUpdate = CASCADE` — se o `id` de um projeto mudar (improvável
  *        porque usamos UUID), a referência acompanha. Sem efeito até a
  *        lib uuid-v7 entrar.
@@ -37,13 +38,26 @@ import androidx.room.PrimaryKey
  *    > cases posteriores.
  *  - `created_at` / `updated_at` (Long, NOT NULL) — epoch millis UTC.
  *  - `deleted_at` (Long, nullable) — soft delete. `null` = ativo.
+ *  - **`dependencias` (String, NOT NULL) — JSON array de UUIDs de tarefas
+ *    que bloqueiam esta.** Implementa RN01 ("tarefa só pode ser concluída
+ *    se todas as dependências estiverem concluídas"). Serializado como
+ *    JSON textual — sem dependência de `kotlinx.serialization` ou
+ *    `org.json`. Lista vazia → `"[]"`. Lista `["id1", "id2"]` →
+ *    `'["id1","id2"]'`. Cuidar do escape de aspas duplas em títulos ou
+ *    ids fora do padrão é responsabilidade de quem cria — nesta lane os
+ *    ids sempre vêm do helper `UuidV7` (apenas hex + hífens) e portanto
+ *    não precisam de escape.
  *
- * **Decisão desta lane (#10):**
- *  - O campo `dependente_id` (self-FK para RN01) está no ER mas **não**
- *    entra nesta entrega — RN01-03 ficam para a lane dedicada de regras
- *    de negócio. Quando entrar, será `nullable` e com
- *    `onDelete = SET_NULL` para não destruir a tarefa-mãe se a
- *    dependência for removida.
+ * **Decisão desta lane (issue #11):**
+ *  - O ER original previa um `dependente_id` (self-FK 1-para-1). Aqui
+ *    optamos por uma lista (`dependencias: List<String>`) — múltiplas
+ *    dependências por tarefa refletem melhor o workflow real ("tarefa B
+ *    depende de A **e** C"). Trade-off: serialização como string JSON
+ *    em vez de uma tabela associativa. Escolha consciente para manter o
+ *    app 100% offline simples; queries "todas as tarefas que dependem
+ *    de X" continuam possíveis via leitura em memória.
+ *  - Migration v3 (`MIGRATION_2_3`) adiciona a coluna com DEFAULT `'[]'`
+ *    para preencher linhas existentes.
  *  - A constraint de FK garante que toda tarefa tem projeto válido. Se o
  *    usuário tentar excluir um projeto com tarefas (RN02), o SQLite joga
  *    `SQLiteConstraintException` — o repository / use case converterá em
@@ -99,4 +113,13 @@ data class TarefaEntity(
 
     @ColumnInfo(name = "deleted_at")
     val deletedAt: Long?,
+
+    /**
+     * Lista de ids de tarefas das quais **esta** depende, serializada
+     * como JSON array de strings (ex.: `'["idA","idB"]'`). Vazio `[]` =
+     * sem dependências. Default `[]` cobre a migração v3 sem necessidade
+     * de backfill customizado.
+     */
+    @ColumnInfo(name = "dependencias", defaultValue = "[]")
+    val dependencias: String = "[]",
 )

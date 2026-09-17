@@ -13,6 +13,7 @@ import com.joaopedrogms.brainoutapp.domain.model.toDomain
 import com.joaopedrogms.brainoutapp.domain.repository.ProjetoRepository
 import com.joaopedrogms.brainoutapp.domain.usecase.CriarTarefaUseCase
 import com.joaopedrogms.brainoutapp.domain.usecase.EditarTarefaUseCase
+import com.joaopedrogms.brainoutapp.domain.exception.RegrasNegocioException
 import com.joaopedrogms.brainoutapp.ui.navigation.Destinations
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -77,10 +78,17 @@ class TarefaFormViewModel @Inject constructor(
         val status: StatusTarefa = StatusTarefa.ABERTA,
         val prioridade: PrioridadeTarefa = PrioridadeTarefa.BAIXA,
         val responsavel: String = "",
+        /**
+         * Dependências da tarefa — RN01. Mantida como string crua
+         * (uma tarefa por linha) para a UI exibir sem precisar parsear
+         * JSON; o domínio troca para `List<String>` no submit.
+         */
+        val dependenciasTexto: String = "",
         val tituloError: String? = null,
         val descricaoError: String? = null,
         val projetoError: String? = null,
         val prazoError: String? = null,
+        val dependenciasError: String? = null,
         val submetendo: Boolean = false,
         val mensagemErroGeral: String? = null,
     ) {
@@ -88,6 +96,7 @@ class TarefaFormViewModel @Inject constructor(
             get() = !submetendo &&
                 tituloError == null && descricaoError == null &&
                 projetoError == null && prazoError == null &&
+                dependenciasError == null &&
                 titulo.isNotBlank() && projetoId != null
     }
 
@@ -150,6 +159,7 @@ class TarefaFormViewModel @Inject constructor(
                     status = tarefa.status,
                     prioridade = tarefa.prioridade,
                     responsavel = tarefa.responsavel.orEmpty(),
+                    dependenciasTexto = tarefa.dependencias.joinToString("\n"),
                 )
             }
         }
@@ -187,6 +197,19 @@ class TarefaFormViewModel @Inject constructor(
         _state.update { it.copy(responsavel = value) }
     }
 
+    /**
+     * Handler do campo "dependências" (issue #11 — RN01). Recebe o
+     * texto cru (uma id por linha) e valida formato (UUID aproximado).
+     */
+    fun onDependenciasChange(value: String) {
+        _state.update {
+            it.copy(
+                dependenciasTexto = value,
+                dependenciasError = validarDependencias(value),
+            )
+        }
+    }
+
     /** Submissão do formulário (criar ou editar). */
     fun salvar() {
         val atual = _state.value
@@ -196,7 +219,9 @@ class TarefaFormViewModel @Inject constructor(
         val descErr = validarDescricao(atual.descricao)
         val projetoErr = validarProjeto(atual.projetoId)
         val prazoErr = validarPrazo(atual.prazo)
+        val depsErr = validarDependencias(atual.dependenciasTexto)
         if (tituloErr != null || descErr != null || projetoErr != null || prazoErr != null ||
+            depsErr != null ||
             atual.titulo.isBlank() || atual.projetoId == null
         ) {
             _state.update {
@@ -205,10 +230,13 @@ class TarefaFormViewModel @Inject constructor(
                     descricaoError = descErr,
                     projetoError = projetoErr ?: "Selecione um projeto.",
                     prazoError = prazoErr,
+                    dependenciasError = depsErr,
                 )
             }
             return
         }
+
+        val dependencias = parseDependencias(atual.dependenciasTexto)
 
         viewModelScope.launch {
             _state.update { it.copy(submetendo = true, mensagemErroGeral = null) }
@@ -227,6 +255,7 @@ class TarefaFormViewModel @Inject constructor(
                         status = atual.status,
                         prioridade = atual.prioridade,
                         responsavel = atual.responsavel.trim().ifBlank { null },
+                        dependencias = dependencias,
                     )
                 } else {
                     criarTarefa(
@@ -236,6 +265,7 @@ class TarefaFormViewModel @Inject constructor(
                         prazo = atual.prazo,
                         prioridade = atual.prioridade,
                         responsavel = atual.responsavel.trim().ifBlank { null },
+                        dependencias = dependencias,
                     )
                 }
             }
@@ -245,10 +275,19 @@ class TarefaFormViewModel @Inject constructor(
                     _event.send(Event.Concluido)
                 }
                 .onFailure { ex ->
+                    // Distingue violação de regra (RN01-RN03) de outros
+                    // erros: nos dois casos a mensagem vai para
+                    // `mensagemErroGeral`, mas a RN mantém o form
+                    // editável (UX — usuário pode corrigir prazo ou
+                    // remover dependência e tentar de novo).
+                    val msg = when (ex) {
+                        is RegrasNegocioException -> ex.message ?: "Violação de regra de negócio."
+                        else -> ex.message ?: "Falha ao salvar a tarefa."
+                    }
                     _state.update {
                         it.copy(
                             submetendo = false,
-                            mensagemErroGeral = ex.message ?: "Falha ao salvar a tarefa.",
+                            mensagemErroGeral = msg,
                         )
                     }
                 }
@@ -291,5 +330,33 @@ class TarefaFormViewModel @Inject constructor(
             if (value.isBefore(hoje)) return "Prazo deve ser igual ou posterior a hoje."
             return null
         }
+
+        /**
+         * Valida o texto do campo "dependências" — uma id por linha.
+         *
+         * Regras:
+         *  - Vazio (ou só whitespace) → ok (sem dependências).
+         *  - Cada linha não-vazia precisa parecer UUID (regex simples
+         *    `[\w-]{8,}`); falha → mensagem amigável apontando o índice
+         *    da linha ruim.
+         *
+         * Validação de "dependência existe" e "está concluída" é RN01,
+         * feita no use case (`ConcluirTarefaUseCase`).
+         */
+        internal fun validarDependencias(value: String): String? {
+            val linhas = value.lines().map { it.trim() }.filter { it.isNotEmpty() }
+            linhas.forEachIndexed { idx, linha ->
+                if (!UUID_FRACO.matches(linha)) {
+                    return "Linha ${idx + 1} não parece um id de tarefa válido."
+                }
+            }
+            return null
+        }
+
+        /** Converte o texto do campo em `List<String>` (ids). */
+        internal fun parseDependencias(value: String): List<String> =
+            value.lines().map { it.trim() }.filter { it.isNotEmpty() }
+
+        private val UUID_FRACO = Regex("^[A-Za-z0-9-]{8,}$")
     }
 }

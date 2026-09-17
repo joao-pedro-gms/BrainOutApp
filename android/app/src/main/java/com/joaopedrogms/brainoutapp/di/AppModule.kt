@@ -46,13 +46,15 @@ object AppModule {
     /**
      * Instância singleton do banco Room local.
      *
-     * **Mudança desta lane (#10):** trocamos o
+     * **Mudança da lane #10:** trocamos o
      * `fallbackToDestructiveMigration()` da lane de Projetos por uma
-     * migration explícita ([AppDatabase.MIGRATION_1_2]). A justificativa
-     * está no KDoc do `AppDatabase`: ainda não há release, então
-     * "perder dados" não é um problema prático, mas é importante parar
-     * de mascarar diferenças de schema — qualquer nova tabela passa por
-     * uma migration real.
+     * migration explícita ([AppDatabase.MIGRATION_1_2]).
+     *
+     * **Mudança da lane #11 (RN01-RN03):** adicionamos
+     * [AppDatabase.MIGRATION_2_3] (coluna `dependencias` em `tarefas`).
+     * Sem essa registration, abrir um banco v2 com `version = 3` quebra
+     * o app com `IllegalStateException`. Vale o mesmo princípio de
+     * migrations reais das lanes anteriores.
      */
     @Provides
     @Singleton
@@ -62,7 +64,10 @@ object AppModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME,
         )
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(
+                AppDatabase.MIGRATION_1_2,
+                AppDatabase.MIGRATION_2_3,
+            )
             .build()
 
     @Provides
