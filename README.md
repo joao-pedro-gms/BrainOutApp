@@ -5,14 +5,12 @@
 **Aplicativo Android para gestão de projetos e tarefas — Projeto Integrador ADS / PUC Goiás 2026/2**
 
 [![Android CI](https://img.shields.io/github/actions/workflow/status/joao-pedro-gms/BrainOutApp/android-ci.yml?branch=master&label=Android%20CI&logo=android&logoColor=white&style=for-the-badge)](https://github.com/joao-pedro-gms/BrainOutApp/actions/workflows/android-ci.yml)
-[![Backend CI](https://img.shields.io/github/actions/workflow/status/joao-pedro-gms/BrainOutApp/backend-ci.yml?branch=master&label=Backend%20CI&logo=python&logoColor=white&style=for-the-badge)](https://github.com/joao-pedro-gms/BrainOutApp/actions/workflows/backend-ci.yml)
 [![PR Checks](https://img.shields.io/github/actions/workflow/status/joao-pedro-gms/BrainOutApp/pr-checks.yml?label=PR%20Checks&logo=github&style=for-the-badge)](https://github.com/joao-pedro-gms/BrainOutApp/actions/workflows/pr-checks.yml)
 [![Security](https://img.shields.io/github/actions/workflow/status/joao-pedro-gms/BrainOutApp/security.yml?label=Security&logo=shield&style=for-the-badge)](https://github.com/joao-pedro-gms/BrainOutApp/actions/workflows/security.yml)
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9.x-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
-![uv](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fastral-sh%2Fuv%2Fmain%2Fassets%2Fbadge%2Fv0.json&style=flat-square)
+![Offline](https://img.shields.io/badge/Offline--first-100%25-success?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 > _Gerencie projetos sem perder prazos — mesmo offline._
@@ -23,28 +21,30 @@
 
 ## ✨ O que é o BrainOutApp?
 
-O **BrainOutApp** é um app Android nativo + API REST em Python para **gestão de projetos e tarefas em pequenos times**. O foco é simples: quem coordena precisa enxergar tudo num dashboard; quem executa precisa atualizar o status sem fricção, mesmo sem internet.
+O **BrainOutApp** é um app Android nativo para **gestão de projetos e tarefas em pequenos times**. O foco é simples: quem coordena precisa enxergar tudo num dashboard; quem executa precisa atualizar o status sem fricção, mesmo sem internet. App **100% offline**, sem backend — dados e perfil vivem no próprio dispositivo.
 
 | 👤 Gerente | 👥 Colaborador |
 |------------|-----------------|
 | Cria projetos, atribui tarefas, acompanha o time | Vê só o que é dele, atualiza status das próprias tarefas |
 | Visão completa: atrasadas, concluídas vs. abertas, prazos da semana | Recebe notificação local 24h antes do prazo |
-| CRUD completo em qualquer entidade | Permissões aplicadas na UI e revalidadas no backend |
+| CRUD completo em qualquer entidade | Permissões aplicadas na UI e revalidadas no ViewModel (defesa em profundidade) |
 
-Tudo **offline-first** (Room) com sincronização contra a API quando a rede volta.
+Tudo **offline-first** (Room como fonte da verdade). App é **100% local** (perfil e dados no dispositivo) — sem backend, sem sincronização entre devices. Ver [ADR-0005](docs/adr/0005-sem-autenticacao-online.md).
 
 ---
 
 ## 🚀 Funcionalidades
 
+> 📌 **Mudança de escopo registrada em 2026-09-17:** o BrainOutApp é **100% offline**. R2 e R6 deixarão de ser implementados como autenticação/sync e foram marcados como 🟡 **não-aplicáveis** nessa forma. Detalhes em [`docs/adr/0005-sem-autenticacao-online.md`](docs/adr/0005-sem-autenticacao-online.md) e [`docs/adr/0006-perfil-local-opcional.md`](docs/adr/0006-perfil-local-opcional.md).
+
 | # | Requisito | Status planejado |
 |---|-----------|------------------|
-| 👥 **R2** | Autenticação com 2 perfis (Gerente / Colaborador) | 🔵 Concepção |
+| 👥 **R2** | Autenticação com 2 perfis (Gerente / Colaborador) | 🟡 Não-aplicável — autenticação local sem senha (ver [ADR-0005](docs/adr/0005-sem-autenticacao-online.md)/[0006](docs/adr/0006-perfil-local-opcional.md)). App seleciona perfil no onboarding. |
 | 🗂️ **R3** | CRUD completo em 2+ entidades com validação | 🟢 Ciclo 1 |
 | 📐 **R4** | 3+ regras de negócio (RN01-RN03) | 🟡 Ciclo 2 |
 | 📱 **R5** | Persistência local (Room) + modo offline | 🟢 Ciclo 1 |
-| ☁️ **R6** | Persistência remota + sincronização | 🟠 Ciclo 3 |
-| 🌐 **R7** | Integração com API externa (BrasilAPI feriados) | 🟠 Ciclo 3 |
+| ☁️ **R6** | Persistência remota + sincronização | 🟡 Não-aplicável — app 100% offline ([ADR-0005](docs/adr/0005-sem-autenticacao-online.md)). Sem sincronização entre dispositivos. |
+| 🌐 **R7** | Integração com API externa (BrasilAPI feriados) | 🟠 Ciclo 3 (reavaliação pendente — sem backend, integração direta no app exigiria novo ADR) |
 | 🔔 **R8** | Recurso nativo: notificações locais | 🟠 Ciclo 3 |
 | 🔎 **R9** | Filtro + busca + dashboard consolidado | 🟡 Ciclo 2 |
 | 🛡️ **R10** | Tratamento de erros e estados de UI | 🟠 Ciclo 3 |
@@ -63,16 +63,15 @@ Tudo **offline-first** (Room) com sincronização contra a API quando a rede vol
 |--------|-----------|---------|
 | 📱 **App Android** | Kotlin + Jetpack Compose | Nativo, type-safe, ecossistema PUC Goiás |
 | 💾 **Persistência local** | Room | Padrão Android, integra direto com Compose |
+| ⚙️ **Preferências (perfil, onboarding)** | DataStore Preferences | Async, type-safe, moderno; substitui SharedPreferences |
+| 🔐 **Segredos locais (senha opcional)** | EncryptedSharedPreferences (`androidx.security:security-crypto`) | Padrão AndroidX para dados sensíveis no device |
+| ⏰ **Tarefas em background** | WorkManager (notificações R8) | Sobrevive a reboot; deadlines persistem |
 | 🪡 **Injeção de dependência** | Hilt | Padrão Jetpack, mínimo boilerplate |
-| 🌐 **Backend** | Python 3.12 + FastAPI | Sintaxe clara, OpenAPI automático |
-| 🗃️ **ORM** | SQLAlchemy 2 + Alembic | Migrations versionadas, async nativo |
-| 🐘 **Banco** | SQLite (dev) → PostgreSQL (prod) | Custo zero em dev, self-hosted em prod |
-| ⚡ **Gerenciador Python** | [uv](https://docs.astral.sh/uv/) | 10–100× mais rápido que pip, lockfile determinístico |
 | ✅ **Qualidade Android** | ktlint, detekt | Estilo + complexidade |
-| ✅ **Qualidade Python** | ruff, pytest | Lint rápido + testes |
-| 🔐 **Segredos** | GitHub Secrets + `local.properties` / `.env` | Nada de credencial no repo |
 
 Justificativas detalhadas em [`docs/arquitetura.md`](docs/arquitetura.md) e ADRs em [`docs/adr/`](docs/adr/).
+
+> 📌 **Stack anterior (2026-09-17 e antes):** incluía FastAPI + SQLAlchemy + Alembic + PostgreSQL/SQLite + Retrofit + JWT. Removidos do plano em [ADR-0005](docs/adr/0005-sem-autenticacao-online.md) — app é 100% offline. A pasta `backend/` será tratada separadamente pelo orchestrator.
 
 ---
 
@@ -126,25 +125,18 @@ cd BrainOutApp
 # 2. Ativar hooks de commit (Conventional Commits + scan de secrets)
 ./scripts/setup.sh
 
-# 3. Configurar Android (após issue #6 criar o esqueleto)
+# 3. Configurar Android
 cp android/local.properties.example android/local.properties
 # editar com sdk.dir=/caminho/para/Android/sdk
 
-# 4. Configurar Backend
-cd backend
-# Instalar uv uma vez: https://docs.astral.sh/uv/getting-started/installation/
-uv sync                # cria .venv e instala tudo via uv.lock
-uv run pytest          # roda os testes
-cp .env.example .env   # editar com seus valores
-cd ..
-
-# 5. Antes de abrir PR
+# 4. Antes de abrir PR
 ./scripts/quality-check.sh
 ```
 
 > 🔒 **Configuração local** (nunca vai pro repo):
 > - `android/local.properties` — copiado de `local.properties.example`
-> - `backend/.env` — copiado de `.env.example`
+>
+> 📌 Backend Python (`backend/`) **não faz mais parte do plano** (ver [ADR-0005](docs/adr/0005-sem-autenticacao-online.md)). O repositório pode mantê-lo por questões históricas até o orchestrator decidir removê-lo.
 
 ---
 
@@ -238,8 +230,8 @@ git branch -d feature/<escopo>
 |------|----------|---------------|
 | GitHub Actions | $0 | 2000 min/mês free em repo público |
 | GitHub Projects | $0 | Plano free |
-| PostgreSQL self-hosted | $0 | Se a produção sair do SQLite |
-| APIs externas (BrasilAPI, ViaCEP) | $0 | Públicas e gratuitas |
+| ~~PostgreSQL self-hosted~~ | ~~$0~~ | ❌ Backend removido do plano ([ADR-0005](docs/adr/0005-sem-autenticacao-online.md)) |
+| ~~APIs externas (BrasilAPI, ViaCEP)~~ | ~~$0~~ | ⏸ Integração externa em reavaliação |
 | Domínio / hospedagem | _opcional_ | Apresentação roda local no APK |
 
 Toda a stack é **open source** ou **self-hosted**. Nenhum SaaS pago.
