@@ -19,19 +19,22 @@
 
 | Lane | Issue | Escopo | Worktree | Branch | Arquivos-âncora | Despachado em | Status |
 |------|-------|--------|----------|--------|-----------------|---------------|--------|
-| `lane-#6-android-esqueleto` | [#6](https://github.com/joao-pedro-gms/BrainOutApp/issues/6) — Estrutura do app em camadas e navegação base | App Android (Kotlin + Compose), pacotes `ui/ domain/ data/ di/`, NavHost com 6 telas (stubs), Hilt configurado, tema base | `wt-feature-android` | `feature/ciclo-1-esqueleto-e-auth` | `android/app/build.gradle.kts`, `android/settings.gradle.kts`, `gradle/`, `android/app/src/main/java/com/joaopedrogms/brainoutapp/` | 2026-09-17 | **PR #46 aberto** (https://github.com/joao-pedro-gms/BrainOutApp/pull/46) |
-| `lane-#7-auth-backend` | [#7](https://github.com/joao-pedro-gms/BrainOutApp/issues/7) — Autenticação com 2 perfis (Gerente / Colaborador) | **Subescopo backend apenas** desta rodada: `app/routers/auth.py` (`/auth/register`, `/auth/login`), hash bcrypt, JWT, dependências FastAPI de auth | `wt-feature-android` (consolidado) | `feature/ciclo-1-esqueleto-e-auth` | `backend/app/auth/`, `backend/app/routers/auth.py`, `backend/app/models/usuario.py`, `backend/tests/test_auth_*.py` | 2026-09-17 | **PR #46 aberto** (mesmo PR que #6, dois commits: Android + backend) |
+| `lane-#6-android-esqueleto` | [#6](https://github.com/joao-pedro-gms/BrainOutApp/issues/6) — Estrutura do app em camadas e navegação base | App Android (Kotlin + Compose), pacotes `ui/ domain/ data/ di/`, NavHost com 6 telas (stubs), Hilt configurado, tema base | `wt-feature-android` | `feature/ciclo-1-esqueleto-android` | `android/app/build.gradle.kts`, `android/settings.gradle.kts`, `gradle/`, `android/app/src/main/java/com/joaopedrogms/brainoutapp/` | 2026-09-17 | **PR #48 aberto** (https://github.com/joao-pedro-gms/BrainOutApp/pull/48) — Android + revert do backend |
+| `lane-design-system` | _(nova — sem issue)_ | Tokens de design (cores, tipografia, espaçamento, radii, sombras), mapeamento de **Lucide icons** para usos recorrentes, `docs/design-system.md` + atualizar `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/{Color,Type,Theme}.kt` | _(a criar)_ | `feature/design-system` | `docs/design-system.md`, `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/` | 2026-09-17 | **a despachar** |
+| `lane-diagramacao-datamodels` | _(nova — toca #2, #14, #15)_ | Diagrama ER atualizado (sem auth/usuário), diagrama de camadas offline-only, novos ADRs (0005 sem-auth, 0006 perfil-local), atualizar `docs/modelo-dados.md`, `docs/arquitetura.md`, `docs/adr/` | _(a criar)_ | `feature/diagramacao-datamodels` | `docs/modelo-dados.md`, `docs/arquitetura.md`, `docs/adr/0005-*.md`, `docs/adr/0006-*.md` | 2026-09-17 | **a despachar** |
 
 ## Escopo fora desta rodada
 
-- Issue #7 — subescopo **Android** (telas de login/cadastro, EncryptedSharedPreferences, guards no NavGraph). Ficará para uma próxima lane após #6 esmerar.
-- Issues #1-#5 (concepção), #8+ (Ciclo 1+) — backlog, não despachadas.
+- Issue #7 — **reciclar**: reescrever para "seleção de perfil local sem senha" (sem backend). Pendente após #48 mergar.
+- Issue #14 — **avaliar**: o backend FastAPI deixa de ser necessário? Se sim, fechar como não-aplicável e remover do plano. Pendente.
+- Issue #15 — **avaliar**: integração externa (BrasilAPI feriados) sem backend? Possível consumir direto do app, mas vira ADR-0007 separado. Pendente.
+- Issues #1-#5 (concepção), #8+ (Ciclo 1+) — backlog.
 
 ## Regras de ownership (anti-colisão)
 
-- **Lane #6:** você é dono de `android/`, `gradle/`, `gradlew*`, `android/app/src/`. **NÃO** toque em `backend/`, `docs/`, `prototipos/`.
-- **Lane #7:** você é dono de `backend/app/auth/`, `backend/app/routers/auth.py`, `backend/app/models/usuario.py`, `backend/tests/test_auth_*.py`. **NÃO** toque em `android/`, `docs/`, `prototipos/`.
-- **Nenhuma lane** faz `git commit`, `git push`, `gh pr create`. O orchestrator commita e abre o PR depois de validar (`./scripts/quality-check.sh` + revisão).
+- **Lane design-system:** você é dono de `docs/design-system.md` (novo), `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/*.kt` (Color/Type/Theme). **NÃO** toque em telas (`ui/screens/**`), backend, modelos, ADRs.
+- **Lane diagramação-datamodels:** você é dono de `docs/modelo-dados.md`, `docs/arquitetura.md`, `docs/adr/0005-*.md`, `docs/adr/0006-*.md`. **NÃO** toque em `android/`, `backend/`, código de produção.
+- **Nenhuma lane** faz `git commit`, `git push`, `gh pr create`. O orchestrator commita e abre o PR depois de validar.
 - Se precisar de algo cross-lane, escreva uma **solicitação** em `docs/BOARD.md` (seção "Solicitações cross-lane"); o orchestrator decide.
 
 ## Convenções obrigatórias (relembradas)
@@ -44,26 +47,24 @@
 
 ## Critérios de aceite por lane
 
-### Lane `#6-android-esqueleto` (referência: issue #6)
+### Lane `lane-design-system`
 
-- [ ] `android/app/build.gradle.kts` + `android/settings.gradle.kts` + `gradle/wrapper/` versionados; `./gradlew help` roda sem erro.
-- [ ] Pacotes `ui/`, `ui/screens/{login,projetos,tarefas,dashboard,criacao,detalhes}/`, `viewmodel/`, `domain/`, `domain/model/`, `data/`, `di/` com arquivos `.gitkeep` ou stub.
-- [ ] NavHost com 6 telas de stub (Composables com `Text("Tela X")`) — login como start destination.
-- [ ] Hilt configurado: `@HiltAndroidApp` no `BrainOutApp.kt`, módulo `AppModule` em `di/`.
-- [ ] Tema Material 3 com cores do protótipo (paleta neutra + acento).
-- [ ] Nenhuma lógica de negócio em Composable.
-- [ ] `android-ci` passa (lint + build debug, mesmo sem testes ainda).
+- [ ] `docs/design-system.md` com seções: Princípios, Paleta (cores primária/secundária/semânticas), Tipografia (escala e pesos), Espaçamentos (escala 4/8/16/24/32/48), Raios de borda, Elevação/sombras, Ícones (mapeamento Lucide).
+- [ ] `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/Color.kt` declara tokens (Nomes semânticos: `surfacePrimary`, `surfaceSecondary`, `onSurfacePrimary`, `accentPrimary`, `stateSuccess`, `stateError`, etc.) — Material 3 `ColorScheme`.
+- [ ] `Type.kt` com escala tipográfica (display/headline/title/body/label) — Material 3 `Typography`.
+- [ ] `Theme.kt` aplica `ColorScheme` + `Typography` em `lightColorScheme()` e `darkColorScheme()`.
+- [ ] Compatibilidade com Compose BOM 2024.08 + Material 3.
+- [ ] Mapeamento Lucide icons para contextos recorrentes: login (User, Lock, Eye, EyeOff), projetos (Folder, Plus, Edit, Trash), tarefas (CheckSquare, Square, Clock, AlertCircle), dashboard (BarChart, Calendar, TrendingUp), navegação (Home, Settings, ChevronRight). Lista deve ter pelo menos 15 ícones mapeados.
+- [ ] Nenhuma alteração fora de `docs/design-system.md` e `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/`.
 
-### Lane `#7-auth-backend` (referência: issue #7, subescopo backend)
+### Lane `lane-diagramacao-datamodels`
 
-- [ ] `POST /auth/register` com payload `{email, senha, perfil}`; 201 + `{id, email, perfil}`. Email único; senha ≥ 8 chars; hash bcrypt (cost ≥ 12).
-- [ ] `POST /auth/login` com payload `{email, senha}`; 200 + `{access_token, token_type, expires_in}`. JWT assinado HS256, expiração configurável.
-- [ ] `GET /auth/me` (autenticado) → `{id, email, perfil}`. Dependência FastAPI `get_current_user`.
-- [ ] Senha nunca persistida em texto plano (test confirma).
-- [ ] Erros 400 (validação), 401 (credenciais inválidas), 409 (email duplicado) com mensagens claras (R10).
-- [ ] Migração Alembic criando a tabela `usuario`.
-- [ ] Testes: `pytest backend/tests/test_auth_*.py` verde; ≥ 1 teste para cada caminho feliz e cada erro.
-- [ ] `uv run ruff check .` e `uv run pytest` passam localmente; `backend-ci` verde.
+- [ ] `docs/modelo-dados.md` reescrito: ER (mermaid) **sem** tabela `usuarios`, **sem** `auth/sync`. Mantém `projeto` e `tarefa` com FK. Decisões registradas (UUID v7, soft delete).
+- [ ] `docs/arquitetura.md` reescrito: diagrama de camadas **offline-only** (sem coluna "Backend Python", sem setas HTTPS para API). App = Compose + Room + WorkManager. Anota as camadas removidas.
+- [ ] `docs/adr/0005-sem-autenticacao-online.md` criado: contexto (decisão do usuário em 2026-09-17), opções consideradas (online com JWT vs local com perfil vs offline total), decisão (offline total + perfil local), consequências (R2/R6 ficam não-aplicáveis; #7/#14 reciclados).
+- [ ] `docs/adr/0006-perfil-local-opcional.md` criado: contexto, decisão (perfil escolhido no primeiro uso, senha opcional só para bloquear app), armazenamento (DataStore Preferences), consequências.
+- [ ] README.md seção "Requisitos" tabela atualizada: R2 marcado como "não-aplicável — autenticação local sem senha (ver ADR-0005/0006)"; R6 marcado como "não-aplicável — app 100% offline".
+- [ ] Nenhuma alteração em código de produção (`android/`, `backend/`).
 
 ## Como despachar / re-despachar
 
@@ -94,3 +95,10 @@ _(preenchido conforme surgem)_
   - `git push` para `origin/feature/ciclo-1-esqueleto-e-auth`.
   - **PR #46 aberto**: https://github.com/joao-pedro-gms/BrainOutApp/pull/46 (target `master`, reviewer joao-pedro-gms).
   - Worktree `wt-feature-backend` removido (`git worktree remove --force`) e branch intermediária `feature/ciclo-1-auth-backend` deletada.
+- 2026-09-17 (mudança de escopo: sem auth online) — Decisão do usuário: aplicação 100% local, perfil de usuário local, senha opcional. Ações do orchestrator:
+  - Fechou PR #46 sem merge (superseded).
+  - `git revert a8cd4b1` no branch `feature/ciclo-1-esqueleto-e-auth` → commit `bed20ea` (Conventional Commits).
+  - Renomeou branch para `feature/ciclo-1-esqueleto-android`, deletou branch remota `feature/ciclo-1-esqueleto-e-auth`.
+  - Push do branch novo (3 commits: 70426fe + a8cd4b1 + bed20ea revert).
+  - **PR #48 aberto**: https://github.com/joao-pedro-gms/BrainOutApp/pull/48 (só Android + revert; closes #6).
+  - Board atualizado com 2 novas lanes a despachar: `lane-design-system` e `lane-diagramacao-datamodels`.
