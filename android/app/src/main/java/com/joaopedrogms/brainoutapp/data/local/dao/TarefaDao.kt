@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
  *  - `softDelete` grava `deleted_at` em vez de remover a linha, preservando
  *    histórico para auditoria local.
  *  - `Flow` nas listas para reatividade Compose: o `collectAsState` da UI
- *    recebe atualização automática após cada `insert/update/softDelete`.
+ *     recebe atualização automática após cada `insert/update/softDelete`.
  *
  * **Adições da lane RN01-RN03 (issue #11):**
  *  - `getByIdsOnce(ids)`: snapshot síncrono usado por
@@ -35,6 +35,12 @@ import kotlinx.coroutines.flow.Flow
  * `projeto_id` joga `SQLiteConstraintException` se o caller tentar
  * excluir um projeto com tarefas em aberto. Esta lane **não** converte
  * a exceção — fica para a lane de regras de negócio (RN01-03).
+ *
+ * Convenção desta lane (issue #12 — filtro/busca/ordenação):
+ *  - `buscar(...)` aplica busca textual por `titulo` + ordenação.
+ *  - Filtro de status já existe via `TarefaListViewModel.combine` (issue #10);
+ *    mantemos aqui só busca + sort para evitar combinatorial explosion de
+ *    queries no DAO. Status é aplicado no domínio.
  */
 @Dao
 interface TarefaDao {
@@ -69,22 +75,22 @@ interface TarefaDao {
     /**
      * Lista todas as tarefas ativas, ordenada por `updated_at` desc
      * (mais recentemente alterada primeiro — UX de inbox).
-     *
-     > **Pendência:** filtro por projeto + status moram em métodos
-     > específicos (ver [getByProjeto] e — futuro — `getByStatus`).
      */
     @Query("SELECT * FROM tarefas WHERE deleted_at IS NULL ORDER BY updated_at DESC")
     fun getAll(): Flow<List<TarefaEntity>>
 
     /**
      * Lista as tarefas de um projeto específico (ativas), ordenada por
-     * `updated_at` desc. Usada pelo detalhe do projeto (issue posterior).
+     * `updated_at` desc. Usada pelo detalhe do projeto.
      *
      * @param projetoId FK do projeto pai.
      */
     @Query("SELECT * FROM tarefas WHERE projeto_id = :projetoId AND deleted_at IS NULL ORDER BY updated_at DESC")
     fun getByProjeto(projetoId: String): Flow<List<TarefaEntity>>
 
+    // =================================================================================
+    // Issue #11 (RN01-RN03) — snapshots para regras de negocio
+    // =================================================================================
     /**
      * Snapshot único das tarefas de um projeto — usado por
      * [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirProjetoUseCase]
@@ -109,4 +115,71 @@ interface TarefaDao {
      */
     @Query("SELECT * FROM tarefas WHERE id IN (:ids) AND deleted_at IS NULL")
     suspend fun getByIdsOnce(ids: List<String>): List<TarefaEntity>
+
+    // =================================================================================
+    // Issue #12 — busca + ordenação
+    // =================================================================================
+
+    /**
+     * Lista tarefas aplicando busca textual por `titulo` (LIKE `%query%`,
+     * case-insensitive). Ordenação por prazo — tarefas sem prazo vão para o
+     * final.
+     *
+     * @param query termo já com `%` nas pontas. Use `"%%"` para listar tudo.
+     */
+    @Query(
+        """
+        SELECT * FROM tarefas
+        WHERE deleted_at IS NULL
+          AND LOWER(titulo) LIKE LOWER(:query)
+        ORDER BY prazo_millis IS NULL, prazo_millis ASC
+        """
+    )
+    fun buscarPorPrazo(query: String): Flow<List<TarefaEntity>>
+
+    /**
+     * Ordenação por prioridade (urgente → alta → média → baixa).
+     *
+     * SQLite ordena `TEXT` alfabeticamente, o que daria ALTA/BAIXA/MEDIA/
+     * URGENTE — **não** o que queremos. Por isso usamos `CASE WHEN` para
+     * rank numérico explícito:
+     *
+     *  - URGENTE → 1
+     *  - ALTA    → 2
+     *  - MEDIA   → 3
+     *  - BAIXA   → 4
+     *
+     * `created_at DESC` é tie-breaker para prioridades iguais.
+     */
+    @Query(
+        """
+        SELECT * FROM tarefas
+        WHERE deleted_at IS NULL
+          AND LOWER(titulo) LIKE LOWER(:query)
+        ORDER BY
+            CASE prioridade
+                WHEN 'URGENTE' THEN 1
+                WHEN 'ALTA'    THEN 2
+                WHEN 'MEDIA'   THEN 3
+                WHEN 'BAIXA'   THEN 4
+                ELSE 5
+            END ASC,
+            created_at DESC
+        """
+    )
+    fun buscarPorPrioridade(query: String): Flow<List<TarefaEntity>>
+
+    /**
+     * Ordenação alfabética por título (case-insensitive). É o fallback
+     * usado pela UI quando `sortBy` vier com valor desconhecido.
+     */
+    @Query(
+        """
+        SELECT * FROM tarefas
+        WHERE deleted_at IS NULL
+          AND LOWER(titulo) LIKE LOWER(:query)
+        ORDER BY titulo COLLATE NOCASE ASC
+        """
+    )
+    fun buscarPorTitulo(query: String): Flow<List<TarefaEntity>>
 }

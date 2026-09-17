@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -19,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,21 +40,30 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.joaopedrogms.brainoutapp.domain.model.Projeto
 import com.joaopedrogms.brainoutapp.domain.model.StatusProjeto
+import com.joaopedrogms.brainoutapp.ui.components.BuscaSearchBar
+import com.joaopedrogms.brainoutapp.ui.components.OrdenacaoDropdown
 import com.joaopedrogms.brainoutapp.ui.theme.BrainOutAppTheme
 import com.joaopedrogms.brainoutapp.viewmodel.ProjetoListViewModel
+import com.joaopedrogms.brainoutapp.viewmodel.ProjetoSortBy
 import com.joaopedrogms.brainoutapp.viewmodel.UiState
 import java.time.LocalDate
 
 /**
  * Tela 2 — Lista de projetos (wireframe 02-projetos.svg).
  *
- * Versão **real** (issue #8): lê a lista reativa do [ProjetoListViewModel]
- * (Room) e renderiza:
- *  - **Loading** → `CircularProgressIndicator`.
- *  - **Empty state** → ícone + texto amigável + CTA "Criar primeiro projeto".
- *  - **Lista** → `LazyColumn` de `Card` com nome, descrição, prazo e status.
- *  - **Erro** → texto + botão "Tentar de novo" (placeholder — não há retry
- *    ainda; ciclo 3 pode adicionar `Snackbar` + retry).
+ * Versão **real** (issue #8 + extensão issue #12):
+ *  - Lê a lista reativa do [ProjetoListViewModel] (Room) e renderiza:
+ *     - **Loading** → `CircularProgressIndicator`.
+ *     - **Empty state** → ícone + texto amigável + CTA "Criar primeiro projeto".
+ *     - **Lista** → `LazyColumn` de `Card` com nome, descrição, prazo e status.
+ *     - **Erro** → texto + ícone `Inbox` vermelho.
+ *
+ * **Filtro + busca + ordenação (issue #12):**
+ *  - `BuscaSearchBar` (Material 3) no topo — busca por `nome`
+ *    (case-insensitive, debounce 300 ms no ViewModel).
+ *  - `LazyRow` de `FilterChip` por status (Todas / Aberto / Concluído /
+ *    Cancelado). "Todas" = `null`.
+ *  - `OrdenacaoDropdown` — NOME / PRAZO / CRIAÇÃO.
  *
  * O `FloatingActionButton` (Plus) é a entrada primária de criação.
  * Mantemos os botões "Tarefas" e "Dashboard" como no stub — são destinos
@@ -68,6 +79,9 @@ fun ProjetosScreen(
     viewModel: ProjetoListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
+    val statusFiltro by viewModel.statusFiltro.collectAsStateWithLifecycle()
+    val sortBy by viewModel.sortBy.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Projetos") }) },
@@ -83,9 +97,16 @@ fun ProjetosScreen(
             is UiState.Success -> TelaListaProjetos(
                 innerPadding = innerPadding,
                 projetos = s.data,
+                query = query,
+                onQueryChange = viewModel::atualizarQuery,
+                statusFiltro = statusFiltro,
+                onStatusFiltroChange = viewModel::atualizarStatusFiltro,
+                sortBy = sortBy,
+                onSortByChange = viewModel::atualizarSortBy,
                 onAbrirProjeto = onAbrirProjeto,
                 onAbrirTarefas = onAbrirTarefas,
                 onAbrirDashboard = onAbrirDashboard,
+                onNovoProjeto = onNovoProjeto,
             )
         }
     }
@@ -136,41 +157,62 @@ private fun TelaErro(innerPadding: PaddingValues, mensagem: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TelaListaProjetos(
     innerPadding: PaddingValues,
     projetos: List<Projeto>,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    statusFiltro: StatusProjeto?,
+    onStatusFiltroChange: (StatusProjeto?) -> Unit,
+    sortBy: ProjetoSortBy,
+    onSortByChange: (ProjetoSortBy) -> Unit,
     onAbrirProjeto: (String) -> Unit,
     onAbrirTarefas: () -> Unit,
     onAbrirDashboard: () -> Unit,
+    onNovoProjeto: () -> Unit,
 ) {
-    if (projetos.isEmpty()) {
-        EmptyStateProjetos(
-            innerPadding = innerPadding,
-            onCriar = { onNovoProjeto() },
-            onAbrirTarefas = onAbrirTarefas,
-            onAbrirDashboard = onAbrirDashboard,
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding),
+    ) {
+        // Barra de busca (Material 3).
+        BuscaSearchBar(
+            query = query,
+            onQueryChange = onQueryChange,
+            placeholder = "Buscar projeto por nome",
         )
-        return
-    }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(innerPadding)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedButton(onClick = onAbrirTarefas, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Filled.Inbox, contentDescription = null)
-                Text("  Tarefas")
-            }
-            OutlinedButton(onClick = onAbrirDashboard, modifier = Modifier.weight(1f)) {
-                Text("Dashboard")
-            }
+        // Chips de filtro de status.
+        FiltrosStatus(
+            filtroAtual = statusFiltro,
+            onFiltroChange = onStatusFiltroChange,
+        )
+
+        // Dropdown de ordenação.
+        OrdenacaoDropdown(
+            label = "Ordenar por",
+            opcoes = ProjetoSortBy.entries.toList(),
+            selecionado = sortBy,
+            onSelecionar = onSortByChange,
+            rotulo = ::rotuloSortBy,
+        )
+
+        // Empty state separado: depende se foi filtro/busca ou não.
+        if (projetos.isEmpty()) {
+            val temFiltroAtivo = query.isNotBlank() || statusFiltro != null
+            EmptyStateProjetos(
+                filtrado = temFiltroAtivo,
+                onCriar = onNovoProjeto,
+                onAbrirTarefas = onAbrirTarefas,
+                onAbrirDashboard = onAbrirDashboard,
+            )
+            return
         }
+
+        // Lista principal.
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -186,9 +228,38 @@ private fun TelaListaProjetos(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FiltrosStatus(
+    filtroAtual: StatusProjeto?,
+    onFiltroChange: (StatusProjeto?) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = filtroAtual == null,
+                onClick = { onFiltroChange(null) },
+                label = { Text("Todas") },
+            )
+        }
+        items(StatusProjeto.entries.toList()) { status ->
+            FilterChip(
+                selected = filtroAtual == status,
+                onClick = { onFiltroChange(status) },
+                label = { Text(labelStatus(status)) },
+            )
+        }
+    }
+}
+
 @Composable
 private fun EmptyStateProjetos(
-    innerPadding: PaddingValues,
+    filtrado: Boolean,
     onCriar: () -> Unit,
     onAbrirTarefas: () -> Unit,
     onAbrirDashboard: () -> Unit,
@@ -196,7 +267,6 @@ private fun EmptyStateProjetos(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -208,23 +278,30 @@ private fun EmptyStateProjetos(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Nenhum projeto ainda",
+            text = if (filtrado) "Nenhum projeto encontrado" else "Nenhum projeto ainda",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 12.dp),
         )
         Text(
-            text = "Crie seu primeiro projeto para começar a organizar tarefas.",
+            text = if (filtrado) {
+                "Ajuste a busca ou os filtros para ver mais resultados."
+            } else {
+                "Crie seu primeiro projeto para começar a organizar tarefas."
+            },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 8.dp),
         )
-        FloatingActionButton(
-            onClick = onCriar,
-            modifier = Modifier.padding(top = 16.dp),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Criar primeiro projeto")
+        if (!filtrado) {
+            FloatingActionButton(
+                onClick = onCriar,
+                modifier = Modifier.padding(top = 16.dp),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Criar primeiro projeto")
+            }
         }
 
+        // Atalhos para as outras telas — preservados da versão pré-filtro.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -232,7 +309,8 @@ private fun EmptyStateProjetos(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedButton(onClick = onAbrirTarefas, modifier = Modifier.weight(1f)) {
-                Text("Tarefas")
+                Icon(Icons.Filled.Inbox, contentDescription = null)
+                Text("  Tarefas")
             }
             OutlinedButton(onClick = onAbrirDashboard, modifier = Modifier.weight(1f)) {
                 Text("Dashboard")
@@ -302,6 +380,18 @@ private fun StatusChip(status: StatusProjeto) {
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
+}
+
+private fun labelStatus(status: StatusProjeto): String = when (status) {
+    StatusProjeto.ABERTO -> "Abertos"
+    StatusProjeto.CONCLUIDO -> "Concluídos"
+    StatusProjeto.CANCELADO -> "Cancelados"
+}
+
+private fun rotuloSortBy(sort: ProjetoSortBy): String = when (sort) {
+    ProjetoSortBy.NOME -> "Nome"
+    ProjetoSortBy.PRAZO -> "Prazo"
+    ProjetoSortBy.CRIACAO -> "Data de criação"
 }
 
 /** Formatador compartilhado de datas em pt-BR (dd/MM/yyyy). */

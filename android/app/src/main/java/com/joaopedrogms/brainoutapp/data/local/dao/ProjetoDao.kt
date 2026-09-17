@@ -19,6 +19,16 @@ import kotlinx.coroutines.flow.Flow
  *    histórico para auditoria local (R5 — offline + persistência local).
  *  - `Flow` nas listas para reatividade Compose: o `collectAsState` da UI
  *     recebe atualização automática após cada `insert/update/softDelete`.
+ *
+ * Convenção desta lane (issue #12 — filtro/busca/ordenação):
+ *  - `buscar(...)` é a fonte de dados da lista com busca textual + filtro de
+ *    status + ordenação. Recebe os parâmetros já normalizados pela camada
+ *    de domínio/ViewModel (termo com `%`, `status` como `name` do enum ou
+ *    `null`, `sortBy` como string canônica).
+ *  - As queries são estáticas e parametrizadas (sem `LIKE` dinâmico nem
+ *    `@RawQuery`) — Room pode validar sintaxe em build time.
+ *  - Mantemos `getAll()` original intacto: serve como fallback e é usado por
+ *    outros pontos da app (detalhe do projeto, etc.).
  */
 @Dao
 interface ProjetoDao {
@@ -63,6 +73,9 @@ interface ProjetoDao {
     @Query("SELECT * FROM projetos WHERE deleted_at IS NULL ORDER BY updated_at DESC")
     suspend fun getAllOnce(): List<ProjetoEntity>
 
+    // =================================================================================
+    // Issue #11 (RN01-RN03) — snapshot por ids para resolver dependencias
+    // =================================================================================
     /**
      * Snapshot único de vários projetos pelos ids (ativos). Usado pelo
      * [com.joaopedrogms.brainoutapp.domain.repository.ProjetoRepository]
@@ -71,4 +84,78 @@ interface ProjetoDao {
      */
     @Query("SELECT * FROM projetos WHERE id IN (:ids) AND deleted_at IS NULL")
     suspend fun getByIdsOnce(ids: List<String>): List<ProjetoEntity>
+
+    // =================================================================================
+    // Issue #12 — busca + filtro + ordenação
+    // =================================================================================
+
+    /**
+     * Lista projetos aplicando busca textual por `nome` (LIKE `%query%`,
+     * case-insensitive nativo do SQLite com `LOWER(...)`), filtro opcional
+     * de status (passar `null` para listar todos) e ordenação configurável.
+     *
+     * @param query       termo já com `%` nas pontas (ex.: `%brain%`). Use
+     *                    `"%%"` para listar tudo.
+     * @param statusFiltro nome do enum `StatusProjeto` (`ABERTO`, `CONCLUIDO`,
+     *                    `CANCELADO`) ou `null` para ignorar o filtro.
+     * @param sortBy      chave de ordenação canônica:
+     *                    - `"nome"`    → `ORDER BY nome COLLATE NOCASE ASC`
+     *                    - `"prazo"`   → `ORDER BY prazo_millis ASC` (nulos por último)
+     *                    - `"criacao"` → `ORDER BY created_at DESC` (padrão)
+     *
+     > Implementação: 3 queries estáticas são mais legíveis e seguras que
+     > uma única com `CASE WHEN`/SQL dinâmico. Room valida cada uma em
+     > build time.
+     */
+    @Query(
+        """
+        SELECT * FROM projetos
+        WHERE deleted_at IS NULL
+          AND (:statusFiltro IS NULL OR status = :statusFiltro)
+          AND LOWER(nome) LIKE LOWER(:query)
+        ORDER BY nome COLLATE NOCASE ASC
+        """
+    )
+    fun buscarPorNome(
+        query: String,
+        statusFiltro: String?,
+    ): Flow<List<ProjetoEntity>>
+
+    /**
+     * Variante de ordenação por prazo. `prazo_millis = NULL` (projetos sem
+     * prazo) vão para o final — alinhado com a UX "mostra o que tem
+     * urgência primeiro".
+     */
+    @Query(
+        """
+        SELECT * FROM projetos
+        WHERE deleted_at IS NULL
+          AND (:statusFiltro IS NULL OR status = :statusFiltro)
+          AND LOWER(nome) LIKE LOWER(:query)
+        ORDER BY prazo_millis IS NULL, prazo_millis ASC
+        """
+    )
+    fun buscarPorPrazo(
+        query: String,
+        statusFiltro: String?,
+    ): Flow<List<ProjetoEntity>>
+
+    /**
+     * Variante de ordenação por data de criação (mais recentes primeiro).
+     * É o fallback usado pela UI quando `sortBy` vier com valor
+     * desconhecido / vazio.
+     */
+    @Query(
+        """
+        SELECT * FROM projetos
+        WHERE deleted_at IS NULL
+          AND (:statusFiltro IS NULL OR status = :statusFiltro)
+          AND LOWER(nome) LIKE LOWER(:query)
+        ORDER BY created_at DESC
+        """
+    )
+    fun buscarPorCriacao(
+        query: String,
+        statusFiltro: String?,
+    ): Flow<List<ProjetoEntity>>
 }

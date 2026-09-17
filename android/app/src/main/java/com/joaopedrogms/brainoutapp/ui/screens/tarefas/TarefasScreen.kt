@@ -21,7 +21,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,22 +40,28 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.joaopedrogms.brainoutapp.domain.model.PrioridadeTarefa
 import com.joaopedrogms.brainoutapp.domain.model.StatusTarefa
 import com.joaopedrogms.brainoutapp.domain.model.Tarefa
+import com.joaopedrogms.brainoutapp.ui.components.BuscaSearchBar
+import com.joaopedrogms.brainoutapp.ui.components.OrdenacaoDropdown
 import com.joaopedrogms.brainoutapp.ui.theme.BrainOutAppTheme
 import com.joaopedrogms.brainoutapp.viewmodel.TarefaListViewModel
+import com.joaopedrogms.brainoutapp.viewmodel.TarefaSortBy
 import com.joaopedrogms.brainoutapp.viewmodel.UiState
 
 /**
  * Tela 4 — Lista global de tarefas com filtros (wireframe 04-tarefas.svg).
  *
- * Versão **real** (issue #10 — CRUD Tarefas):
- *  - Observa [TarefaListViewModel] (Room via use case) e renderiza:
+ * Versão **real** (issue #10 — CRUD Tarefas + extensão issue #12):
+ *  - Observa [TarefaListViewModel] (Room via DAO) e renderiza:
  *     - **Loading** → `CircularProgressIndicator`.
  *     - **Empty state** → ícone + texto amigável + CTA "Criar primeira tarefa".
  *     - **Lista** → `LazyColumn` de `Card` com título, projeto (id curto),
  *       prazo, status e prioridade (chips).
  *     - **Erro** → texto + ícone `Inbox` vermelho.
- *  - **Filtros por status**: chips no topo (Todas / Aberta / Em andamento /
- *    Concluída / Cancelada). Aplicação é local no ViewModel.
+ *  - **Filtros por status** (herdado da issue #10): chips no topo
+ *    (Todas / Aberta / Em andamento / Concluída / Cancelada).
+ *  - **Busca textual por `titulo`** (issue #12): `BuscaSearchBar` no topo.
+ *  - **Ordenação** (issue #12): `OrdenacaoDropdown` — PRAZO / PRIORIDADE /
+ *    TÍTULO.
  *  - **FAB** de criar tarefa — chama `onNovaTarefa`.
  *
  * Sem ações de edição / exclusão aqui — clicar em uma tarefa abre
@@ -74,6 +79,8 @@ fun TarefasScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val filtro by viewModel.filtroStatus.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
+    val sortBy by viewModel.sortBy.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Tarefas") }) },
@@ -88,15 +95,31 @@ fun TarefasScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            // Barra de busca (issue #12) — antes dos filtros de status para
+            // reforçar a primazia visual da busca textual.
+            BuscaSearchBar(
+                query = query,
+                onQueryChange = viewModel::atualizarQuery,
+                placeholder = "Buscar tarefa por título",
+            )
             FiltrosStatus(
                 filtroAtual = filtro,
                 onFiltroChange = viewModel::atualizarFiltroStatus,
+            )
+            OrdenacaoDropdown(
+                label = "Ordenar por",
+                opcoes = TarefaSortBy.entries.toList(),
+                selecionado = sortBy,
+                onSelecionar = viewModel::atualizarSortBy,
+                rotulo = ::rotuloSortBy,
             )
             when (val s = state) {
                 is UiState.Loading -> TelaCarregando()
                 is UiState.Error -> TelaErro(s.message)
                 is UiState.Success -> TelaListaTarefas(
                     tarefas = s.data,
+                    query = query,
+                    filtro = filtro,
                     onAbrirTarefa = onAbrirTarefa,
                     onNovaTarefa = onNovaTarefa,
                 )
@@ -152,7 +175,7 @@ private fun FiltrosStatus(
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
@@ -167,7 +190,6 @@ private fun FiltrosStatus(
                 selected = filtroAtual == status,
                 onClick = { onFiltroChange(status) },
                 label = { Text(labelStatus(status)) },
-                colors = FilterChipDefaults.filterChipColors(),
             )
         }
     }
@@ -176,11 +198,14 @@ private fun FiltrosStatus(
 @Composable
 private fun TelaListaTarefas(
     tarefas: List<Tarefa>,
+    query: String,
+    filtro: StatusTarefa?,
     onAbrirTarefa: (String) -> Unit,
     onNovaTarefa: () -> Unit,
 ) {
     if (tarefas.isEmpty()) {
-        EmptyStateTarefas(onCriar = onNovaTarefa)
+        val temFiltroAtivo = query.isNotBlank() || filtro != null
+        EmptyStateTarefas(filtrado = temFiltroAtivo, onCriar = onNovaTarefa)
         return
     }
 
@@ -199,7 +224,7 @@ private fun TelaListaTarefas(
 }
 
 @Composable
-private fun EmptyStateTarefas(onCriar: () -> Unit) {
+private fun EmptyStateTarefas(filtrado: Boolean, onCriar: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -214,21 +239,27 @@ private fun EmptyStateTarefas(onCriar: () -> Unit) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "Nenhuma tarefa ainda",
+            text = if (filtrado) "Nenhuma tarefa encontrada" else "Nenhuma tarefa ainda",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 12.dp),
         )
         Text(
-            text = "Crie sua primeira tarefa para acompanhar o progresso.",
+            text = if (filtrado) {
+                "Ajuste a busca ou os filtros para ver mais resultados."
+            } else {
+                "Crie sua primeira tarefa para acompanhar o progresso."
+            },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 8.dp),
         )
-        FloatingActionButton(
-            onClick = onCriar,
-            modifier = Modifier.padding(top = 16.dp),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Criar primeira tarefa")
+        if (!filtrado) {
+            FloatingActionButton(
+                onClick = onCriar,
+                modifier = Modifier.padding(top = 16.dp),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Criar primeira tarefa")
+            }
         }
     }
 }
@@ -330,6 +361,12 @@ private fun labelStatus(status: StatusTarefa): String = when (status) {
     StatusTarefa.EM_ANDAMENTO -> "Em andamento"
     StatusTarefa.CONCLUIDA -> "Concluídas"
     StatusTarefa.CANCELADA -> "Canceladas"
+}
+
+private fun rotuloSortBy(sort: TarefaSortBy): String = when (sort) {
+    TarefaSortBy.PRAZO -> "Prazo"
+    TarefaSortBy.PRIORIDADE -> "Prioridade"
+    TarefaSortBy.TITULO -> "Título (A→Z)"
 }
 
 /** Formatador compartilhado de datas em pt-BR (dd/MM/yyyy). */
