@@ -68,8 +68,13 @@ android/
 | 2 | `projetos`            | `prototipos/wireframes/02-projetos.svg`           | ✅   |
 | 3 | `detalhes/{projetoId}`| `prototipos/wireframes/03-projeto-detalhe.svg`    | ✅   |
 | 4 | `tarefas`             | `prototipos/wireframes/04-tarefas.svg`            | ✅   |
-| 5 | `criacao`             | `prototipos/wireframes/05-tarefa-form.svg`        | ✅   |
+| 5a| `criacao`             | `prototipos/wireframes/05-tarefa-form.svg`        | ✅   |
+| 5b| `criacao/tarefa?projetoId=&tarefaId=` | (formulário de **tarefa**)            | ✅ (#10) |
 | 6 | `dashboard`           | `prototipos/wireframes/06-dashboard.svg`          | ✅   |
+
+> A rota 5a (`criacao`) continua sendo o formulário de **projeto** (issue #8).
+> A rota 5b (`criacao/tarefa?…`) é a nova entrada do CRUD de **tarefa** (issue #10).
+> Ambas são distintas para evitar generalizar o form antes da hora.
 
 `startDestination` = `login`. A rota `detalhes/{projetoId}` recebe o id como
 argumento de navegação (`NavType.StringType`).
@@ -122,33 +127,49 @@ argumento de navegação (`NavType.StringType`).
 
 ## 🔐 AppLock (ADR-0006 — opcional)
 
-Bloqueio do app no cold start com **senha local opcional**:
 
-- **Storage:** `androidx.security:security-crypto` (MasterKey AES256_GCM +
-  `EncryptedSharedPreferences`). O hash da senha **nunca** toca disco em
-  texto plano.
-- **KDF:** PBKDF2-HMAC-SHA256, 100.000 iterações, salt aleatório de 16 bytes.
-- **Validação:** comparação constant-time para evitar timing-attack local.
-- **Política de tentativas:** 3 falhas → cooldown de 30s (defesa contra
-  força-bruta local). Após o cooldown, contador zera.
-- **"Esqueci a senha":** não há recovery — `AlertDialog` explica que isso
-  remove o AppLock mas preserva os dados (perfil/projetos/tarefas).
-- **Fluxo de tela:** novo estado `RootStartState.NeedsUnlock`. O
-  `BrainOutAppNavHost` renderiza `AppLockScreen` **fora** do `NavHost`
-  (tela standalone) enquanto `NeedsUnlock`. Após `unlock()`, chama
-  `rootViewModel.refresh()` e o NavHost monta a home (`projetos`).
-- **Arquivos novos:**
-  - `data/security/SecurityPreferences.kt` (interface + impl)
-  - `di/SecurityModule.kt` (MasterKey + EncryptedSharedPreferences + bind)
-  - `ui/screens/applock/AppLockViewModel.kt`
-  - `ui/screens/applock/AppLockScreen.kt`
-- **Arquivos estendidos:** `RootViewModel.kt` (novo estado `NeedsUnlock` +
-  injeção do `SecurityPreferencesRepository`), `BrainOutAppNavHost.kt`
-  (ramo `NeedsUnlock` no `when`), `gradle/libs.versions.toml` e
-  `app/build.gradle.kts` (dep `androidx.security:security-crypto:1.1.0-alpha06`).
-- **Fora do escopo desta lane (próxima):** tela de Configurações para
-  definir/alterar/remover a senha. Hoje o AppLock pode ser removido
-  apenas via "Esqueci a senha" no cold start.
+## 🔁 O que entrou no ciclo 3 (issue #10 — CRUD Tarefas)
+
+
+- **Nova entidade Room `TarefaEntity`** (`tableName = "tarefas"`) com FK
+  `RESTRICT` para `projetos(id)` (RN02 — não excluir projeto com tarefa aberta).
+  Campos: `id`, `projeto_id`, `titulo`, `descricao`, `prazo_millis`, `status`,
+  `prioridade`, `responsavel`, `created_at`, `updated_at`, `deleted_at` (soft
+  delete, mesmo padrão de `ProjetoEntity`).
+- **Banco atualizado para v2** com `MIGRATION_1_2` explícita (`CREATE TABLE
+  tarefas` + índice em `projeto_id`). O `fallbackToDestructiveMigration()` da
+  issue #8 foi **removido** (a justificativa está no KDoc de `AppDatabase`).
+- **`TarefaDao`** com `insert`, `update`, `softDelete`, `getById`, `getAll`
+  e `getByProjeto(projetoId): Flow<List<TarefaEntity>>` — reatividade Compose
+  via `Flow`.
+- **Camada `domain/`** com `Tarefa` + `StatusTarefa` (`ABERTA`, `EM_ANDAMENTO`,
+  `CONCLUIDA`, `CANCELADA`) + `PrioridadeTarefa` (`BAIXA`, `MEDIA`, `ALTA`,
+  `URGENTE`) + mappers entity↔domain. `TarefaRepository` interface e
+  `TarefaRepositoryImpl`.
+- **5 use cases**: `CriarTarefaUseCase`, `EditarTarefaUseCase`,
+  `ListarTarefasUseCase`, `ExcluirTarefaUseCase`, `ListarTarefasPorProjetoUseCase`.
+- **`viewmodel/`** com 3 `@HiltViewModel`: `TarefaListViewModel` (filtro por
+  status via `FilterChip`), `TarefaDetailViewModel`, `TarefaFormViewModel`
+  (com seletor de projeto pai — lista carregada do `ProjetoRepository`,
+  validações de título ≤100, descrição ≤500, projeto obrigatório, prazo ≥ hoje).
+- **Telas reais**:
+  - `TarefasScreen`: lista com chips de filtro por status (`Todas / Aberta /
+    Em andamento / Concluída / Cancelada`), FAB `+`, empty state com ícone
+    `Assignment` e CTA.
+  - `TarefaFormScreen` (em `ui/screens/tarefas/`, **separada** de
+    `CriacaoScreen` por opção arquitetural da lane — não generalizamos o
+    form de projeto): dropdown de projeto pai (carregado reativamente),
+    campos título/descrição/prazo (DatePicker)/prioridade (chips)/status
+    (chips)/responsável, validações inline.
+- **DI atualizado**: provider para `TarefaDao`; novo `@Binds` para
+  `TarefaRepositoryImpl`. `RepositoryModule` segue em arquivo separado.
+- **Rotas**: nova entrada `criacao/tarefa?projetoId=&tarefaId=` em
+  `Destinations.kt` (com query params opcionais — o `BrainOutAppNavHost.kt`
+  é responsabilidade de outra lane). Helpers `criacaoTarefaNova(projetoId?)`
+  e `criacaoTarefaEditar(tarefaId)`.
+- **Validações do form de tarefa**: titulo ≤100, descricao ≤500, projetoId
+  obrigatório, prazo ≥ hoje se preenchido, prioridade BAIXA (padrão),
+  status ABERTA (padrão).
 
 ## 🚀 Como rodar
 

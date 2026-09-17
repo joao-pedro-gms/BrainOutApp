@@ -3,9 +3,12 @@ package com.joaopedrogms.brainoutapp.di
 import android.content.Context
 import androidx.room.Room
 import com.joaopedrogms.brainoutapp.data.local.dao.ProjetoDao
+import com.joaopedrogms.brainoutapp.data.local.dao.TarefaDao
 import com.joaopedrogms.brainoutapp.data.local.db.AppDatabase
 import com.joaopedrogms.brainoutapp.data.repository.ProjetoRepositoryImpl
+import com.joaopedrogms.brainoutapp.data.repository.TarefaRepositoryImpl
 import com.joaopedrogms.brainoutapp.domain.repository.ProjetoRepository
+import com.joaopedrogms.brainoutapp.domain.repository.TarefaRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -21,8 +24,8 @@ import javax.inject.Singleton
  *
  * Fornece:
  *  - [OkHttpClient] (placeholder, ciclo 1);
- *  - [AppDatabase] + DAOs (Room, ciclo 2 — issue #8 CRUD Projetos);
- *  - binding [ProjetoRepository] → [ProjetoRepositoryImpl] (ciclo 2).
+ *  - [AppDatabase] + DAOs (Room, ciclos 2 e 3);
+ *  - bindings [ProjetoRepository] / [TarefaRepository] → suas `Impl`.
  *
  * Módulos específicos (Network, etc.) podem ser adicionados em outros
  * arquivos `@InstallIn(SingletonComponent::class)` para manter este
@@ -43,11 +46,13 @@ object AppModule {
     /**
      * Instância singleton do banco Room local.
      *
-     * `fallbackToDestructiveMigration()` cobre o caso (improvável) de alguém
-     * instalar o APK de desenvolvimento em cima de um banco de versão mais
-     * antiga gerado por uma branch paralela — perdemos dados, mas o app
-     * abre. Em release (ciclo 3+) removeremos e adicionaremos migrations
-     * explícitas via `Room.databaseBuilder().addMigrations(...)`.
+     * **Mudança desta lane (#10):** trocamos o
+     * `fallbackToDestructiveMigration()` da lane de Projetos por uma
+     * migration explícita ([AppDatabase.MIGRATION_1_2]). A justificativa
+     * está no KDoc do `AppDatabase`: ainda não há release, então
+     * "perder dados" não é um problema prático, mas é importante parar
+     * de mascarar diferenças de schema — qualquer nova tabela passa por
+     * uma migration real.
      */
     @Provides
     @Singleton
@@ -57,11 +62,14 @@ object AppModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME,
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(AppDatabase.MIGRATION_1_2)
             .build()
 
     @Provides
     fun provideProjetoDao(database: AppDatabase): ProjetoDao = database.projetoDao()
+
+    @Provides
+    fun provideTarefaDao(database: AppDatabase): TarefaDao = database.tarefaDao()
 }
 
 /**
@@ -80,4 +88,10 @@ abstract class RepositoryModule {
     abstract fun bindProjetoRepository(
         impl: ProjetoRepositoryImpl,
     ): ProjetoRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTarefaRepository(
+        impl: TarefaRepositoryImpl,
+    ): TarefaRepository
 }
