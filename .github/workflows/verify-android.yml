@@ -88,14 +88,21 @@ jobs:
         id: gradle
         working-directory: android
         run: |
-          # GitHub Actions checkout nao preserva o bit +x em todos os casos,
-          # entao forcamos chmod antes de checar.
+          echo "DEBUG: working-directory aplicado = $(pwd)"
           chmod +x ./gradlew 2>/dev/null || true
-          if [ -x ./gradlew ]; then
+          chmod +x ./gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
+          echo "DEBUG: ls -la gradlew:"
+          ls -la ./gradlew
+          echo "DEBUG: stat gradlew:"
+          stat ./gradlew
+          echo "DEBUG: test -x gradlew -> $?"
+          test -x ./gradlew && GRADLE_OK=1 || GRADLE_OK=0
+          echo "DEBUG: GRADLE_OK=$GRADLE_OK"
+          if [ "$GRADLE_OK" = "1" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::error::gradlew ausente em $(pwd) — Android nao pode ser buildado"
+            echo "::error::gradlew nao executavel em $(pwd)"
             exit 1
           fi
 
