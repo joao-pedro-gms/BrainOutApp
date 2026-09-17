@@ -21,13 +21,30 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Android CI depende do Gradle wrapper criado na issue #6.
+      # Quando o wrapper ainda não existir, marcamos skip com aviso em vez de falhar
+      # (até #6 fechar).
+      - name: Detectar Gradle wrapper
+        id: gradle
+        run: |
+          if [ -x ./gradlew ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Gradle wrapper ausente. Issue #6 cria o wrapper; até lá, skip do build Android."
+          fi
+
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.gradle.outputs.present == 'true'
 
       - name: ktlint
+        if: steps.gradle.outputs.present == 'true'
         run: ./gradlew ktlintCheck
 
       - name: Testes unitários
+        if: steps.gradle.outputs.present == 'true'
         run: ./gradlew testDebugUnitTest
 
       - name: Build debug
+        if: steps.gradle.outputs.present == 'true'
         run: ./gradlew assembleDebug

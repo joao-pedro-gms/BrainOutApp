@@ -15,8 +15,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      # gitleaks-action@v2 passou a exigir licença comercial; usamos a CLI oficial
+      # (open source, sem custo). Instalada no runner Ubuntu padrão.
+      - name: Instalar gitleaks
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/v8.18.4/scripts/install.sh | sh -s v8.18.4
+
+      - name: Rodar gitleaks
+        run: gitleaks detect --source . --redact --no-banner
 
   # Checagem de dependências do backend com pip-audit, quando existir
   dep-audit:
