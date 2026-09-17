@@ -44,9 +44,10 @@ export default function Projetos({ perfil }) {
         {isGerente && (
           <button
             onClick={() => setMostrarForm((v) => !v)}
-            className="btn-primary"
+            className="btn-primary whitespace-nowrap"
           >
-            {mostrarForm ? 'Cancelar' : '+ Novo projeto'}
+            <span className="hidden sm:inline">{mostrarForm ? 'Cancelar' : '+ Novo projeto'}</span>
+            <span className="sm:hidden">{mostrarForm ? 'Cancelar' : '+ Novo'}</span>
           </button>
         )}
       </div>
@@ -94,7 +95,7 @@ export default function Projetos({ perfil }) {
             return (
               <div key={p.id} className="card p-5 flex flex-col">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <Link to={`/projetos/${p.id}`} className="font-semibold text-slate-900 hover:text-brand-700">
+                  <Link to={`/projetos/${p.id}`} className="font-semibold text-slate-900 hover:text-brand-700 min-w-0 flex-1">
                     {p.nome}
                   </Link>
                   <StatusProjetoBadge status={p.status} />
