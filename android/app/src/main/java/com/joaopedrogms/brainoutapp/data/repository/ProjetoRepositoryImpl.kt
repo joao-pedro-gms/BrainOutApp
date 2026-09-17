@@ -22,6 +22,12 @@ import javax.inject.Singleton
  * Centralizamos o cálculo de `deletedAt` aqui: o repository garante que
  * o timestamp usado é coerente (`Instant.now()` no momento do delete),
  * e não uma mistura de `System.currentTimeMillis()` espalhada.
+ *
+ * **Adições da lane RN01-RN03 (issue #11):**
+ *  - `getByIdOnce(id)`: já existia no DAO; só exposto no contrato.
+ *    Usado pelos use cases para checar `prazo do projeto` em RN03.
+ *  - `getByIdsOnce(ids)`: snapshot batch — adicionado por completude
+ *    (RN01 não usa hoje, mas está no contrato para extensões futuras).
  */
 @Singleton
 class ProjetoRepositoryImpl @Inject constructor(
@@ -33,6 +39,14 @@ class ProjetoRepositoryImpl @Inject constructor(
 
     override fun getById(id: String): Flow<Projeto?> =
         dao.getById(id).map { it?.toDomain() }
+
+    override suspend fun getByIdOnce(id: String): Projeto? =
+        dao.getByIdOnce(id)?.toDomain()
+
+    override suspend fun getByIdsOnce(ids: List<String>): List<Projeto> {
+        if (ids.isEmpty()) return emptyList()
+        return dao.getByIdsOnce(ids).map { it.toDomain() }
+    }
 
     override suspend fun insert(projeto: Projeto) {
         dao.insert(projeto.toEntity())

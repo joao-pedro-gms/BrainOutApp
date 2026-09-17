@@ -20,6 +20,17 @@ import kotlinx.coroutines.flow.Flow
  *  - `Flow` nas listas para reatividade Compose: o `collectAsState` da UI
  *    recebe atualização automática após cada `insert/update/softDelete`.
  *
+ * **Adições da lane RN01-RN03 (issue #11):**
+ *  - `getByIdsOnce(ids)`: snapshot síncrono usado por
+ *    [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirTarefaUseCase]
+ *    para carregar dependências sem ficar preso a um `Flow` único. Filtra
+ *    `deleted_at IS NULL` para não contar soft-deleteds como dependência
+ *    ativa (decisão: dependência removida = dependência satisfeita).
+ *  - `getByProjetoOnce(projetoId)`: snapshot síncrono para
+ *    [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirProjetoUseCase]
+ *    contar tarefas em aberto (RN02). A versão `Flow` continua existindo
+ *    para a UI (reatividade).
+ *
  * **RN02 (não implementada nesta lane):** a FK `RESTRICT` em
  * `projeto_id` joga `SQLiteConstraintException` se o caller tentar
  * excluir um projeto com tarefas em aberto. Esta lane **não** converte
@@ -73,4 +84,29 @@ interface TarefaDao {
      */
     @Query("SELECT * FROM tarefas WHERE projeto_id = :projetoId AND deleted_at IS NULL ORDER BY updated_at DESC")
     fun getByProjeto(projetoId: String): Flow<List<TarefaEntity>>
+
+    /**
+     * Snapshot único das tarefas de um projeto — usado por
+     * [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirProjetoUseCase]
+     * (RN02) para contar tarefas em aberto sem precisar de `Flow`.
+     *
+     * > Retorna **todas** as tarefas ativas do projeto (não só as
+     * > abertas). Quem chama decide o predicado de "aberta" — geralmente
+     * > `status IN ('ABERTA','EM_ANDAMENTO')`.
+     */
+    @Query("SELECT * FROM tarefas WHERE projeto_id = :projetoId AND deleted_at IS NULL")
+    suspend fun getByProjetoOnce(projetoId: String): List<TarefaEntity>
+
+    /**
+     * Snapshot único de várias tarefas por id — usado por
+     * [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirTarefaUseCase]
+     * (RN01) para inspecionar dependências.
+     *
+     * - Filtra `deleted_at IS NULL` — dependência soft-deleted é
+     *   tratada como "satisfeita" (a tarefa-mãe não bloqueia mais).
+     * - Ids inexistentes são simplesmente ignorados (não jogam erro).
+     * - `ids` vazio retorna lista vazia sem bater no banco.
+     */
+    @Query("SELECT * FROM tarefas WHERE id IN (:ids) AND deleted_at IS NULL")
+    suspend fun getByIdsOnce(ids: List<String>): List<TarefaEntity>
 }

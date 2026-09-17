@@ -14,26 +14,27 @@ import com.joaopedrogms.brainoutapp.data.local.entity.TarefaEntity
  *
  * Histórico de versões:
  *  - v1 (issue #8 — CRUD Projetos): apenas tabela `projetos`.
- *  - **v2 (issue #10 — CRUD Tarefas):** adiciona tabela `tarefas` com
+ *  - v2 (issue #10 — CRUD Tarefas): adiciona tabela `tarefas` com
  *    FK `RESTRICT` para `projetos(id)` (RN02). Migration [MIGRATION_1_2]
  *    recria a tabela sem perda — segura porque o banco ainda não tem
  *    dados de produção (release é posterior a esta lane).
+ *  - **v3 (issue #11 — RN01-RN03):** adiciona coluna `dependencias` (TEXT
+ *    JSON) à tabela `tarefas`. Migration [MIGRATION_2_3] faz `ALTER TABLE`
+ *    com `DEFAULT '[]'`, preenchendo retroativamente todas as linhas
+ *    existentes com lista vazia (sem dependências).
  *
  * **Decisão sobre `fallbackToDestructiveMigration()`:** o `AppModule`
- * **removeu** o fallback destrutivo nesta lane. O comentário original
- * da lane de Projetos já previa ("Em release (ciclo 3+) removeremos e
- * adicionaremos migrations explícitas"); estamos fazendo o switch uma
- * lane antes porque a migration de Tarefa precisa ser controlada. Em
- * debug, instalar um APK de branch paralela sobre um banco antigo
- * ainda abre (Room usa `fallbackToDestructiveMigration` em dev se for
- * explicitamente religado); em release seguimos o contrato de migration.
+ * **removeu** o fallback destrutivo na lane #10. Em release seguimos o
+ * contrato de migration; em debug, se uma branch paralela instalar APK
+ * com versão de schema diferente sem migration, o Room lançará
+ * `IllegalStateException` (mais seguro para detectar drift).
  *
  * `exportSchema = false` continua por enquanto (ciclo 3 liga `true`
  * quando o CI de schema entrar).
  */
 @Database(
     entities = [ProjetoEntity::class, TarefaEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -81,6 +82,29 @@ abstract class AppDatabase : RoomDatabase() {
                     """.trimIndent(),
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tarefas_projeto_id` ON `tarefas` (`projeto_id`)")
+            }
+        }
+
+        /**
+         * Migration v2 → v3 (issue #11 — RN01-RN03): adiciona a coluna
+         * `dependencias` (TEXT, default `'[]'`) à tabela `tarefas`.
+         *
+         * Sem perda de dados: linhas existentes ganham lista vazia como
+         * default, ou seja, passam a se comportar como tarefas sem
+         * dependências (regra mais permissiva — RN01 não bloqueia nada
+         * retroativamente). Se houver tarefas que dependiam umas das
+         * outras sem o campo, o usuário precisa recadastrar via UI
+         * (campo "dependências" adicionado em `TarefaFormScreen`).
+         *
+         * > Por que `ALTER TABLE … DEFAULT '[]'` e não backfill via
+         * > `UPDATE`? O default aplica tanto a linhas existentes quanto
+         * a novas, eliminando duas operações e ficando atômico.
+         */
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `tarefas` ADD COLUMN `dependencias` TEXT NOT NULL DEFAULT '[]'",
+                )
             }
         }
     }

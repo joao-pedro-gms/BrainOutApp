@@ -171,6 +171,81 @@ argumento de navegação (`NavType.StringType`).
   obrigatório, prazo ≥ hoje se preenchido, prioridade BAIXA (padrão),
   status ABERTA (padrão).
 
+## 🔁 O que entrou no ciclo 4 (issue #11 — RN01-RN03)
+
+- **`domain/exception/RegrasNegocioException`** — exceção tipada para
+  violações de regras. Mensagem amigável (R10) é propagada direto para
+  a UI; ViewModel captura especificamente para distinguir de erros
+  genéricos.
+- **3 use cases em `domain/usecase/`:**
+  - `ConcluirTarefaUseCase(tarefaId)` — RN01. Tarefa só vira
+    `CONCLUIDA` se todas as entradas em `dependencias` estiverem
+    `CONCLUIDA`. Lança `RegrasNegocioException` com `"Não é possível
+    concluir: a tarefa '<título>' ainda está pendente."` quando há
+    bloqueio. Dependência soft-deleted é tratada como satisfeita.
+    Idempotente.
+  - `ConcluirProjetoUseCase(projetoId)` — RN02. Projeto só vira
+    `CONCLUIDO` se não houver tarefa em `ABERTA` ou `EM_ANDAMENTO`.
+    Lança `"Projeto tem N tarefa(s) em aberto. Conclua ou cancele
+    antes."` quando há bloqueio. `CANCELADA` não bloqueia.
+    Idempotente.
+  - **RN03** estende `CriarTarefaUseCase` e `EditarTarefaUseCase`:
+    prazo da tarefa, se preenchido, deve ser `≤` prazo do projeto.
+    Lança `"Prazo da tarefa (DD/MM) ultrapassa o prazo do projeto
+    (DD/MM)."` quando viola. Projeto sem prazo → tarefa pode ter
+    qualquer prazo. Projeto inexistente (id órfão) → regra é pulada
+    silenciosamente (FK do SQLite cuida depois).
+- **Tarefa ganhou `dependencias: List<String>`** no domínio +
+  entity Room (serializado como JSON array de strings em coluna
+  TEXT, sem dependência externa — `kotlinx.serialization` continua
+  fora do catálogo). Default `emptyList()`. Migration v2 → v3
+  (`MIGRATION_2_3`) adiciona a coluna `dependencias TEXT NOT NULL
+  DEFAULT '[]'` via `ALTER TABLE`. `AppDatabase` agora em `version =
+  3` e o builder do Room registra `MIGRATION_2_3` em `AppModule.kt`
+  (sem essa registration, abrir v2 com `version = 3` quebra com
+  `IllegalStateException`).
+- **`TarefaDao`** ganhou `getByIdsOnce(ids)` (snapshot batch, filtra
+  soft-deleted) e `getByProjetoOnce(projetoId)` (snapshot único,
+  usado por `ConcluirProjetoUseCase`). **O contrato dos repositórios
+  foi estendido** (não quebrou callers existentes).
+- **Camada de `viewmodel/`:**
+  - `TarefaFormViewModel` ganhou `dependenciasTexto` no `FormState`
+    (textarea crua, uma id por linha), validador
+    `validarDependencias` (regex fraca de UUID) e tratamento
+    específico de `RegrasNegocioException` em `salvar()` — a mensagem
+    da RN vai para `mensagemErroGeral` e o form fica editável (UX).
+  - `TarefaFormScreen` ganhou o campo "Dependências (RN01)" entre
+    Responsável e os botões. Placeholder explica o formato.
+- **`android/app/src/test/java/.../fakes/`** — `FakeProjetoRepository`
+  e `FakeTarefaRepository` in-memory (sem Room, sem `android.util.Log`).
+  Cobertura JUnit 4 dos use cases de regras:
+  - `ConcluirTarefaUseCaseTest` — 8 testes (sem deps; com dep aberta;
+    com dep concluída; EM_ANDAMENTO bloqueia; múltiplas deps;
+    idempotência; inexistente; soft-deleted).
+  - `ConcluirProjetoUseCaseTest` — 9 testes (sem tarefas; com 1
+    aberta; com 1 concluída; EM_ANDAMENTO bloqueia; CANCELADA não;
+    contagem na mensagem; idempotência; inexistente; isolamento por
+    projeto).
+  - `CriarTarefaUseCaseTest` — 7 testes (prazo menor; igual;
+    maior viola com mensagem R10; projeto sem prazo; tarefa sem
+    prazo; projeto inexistente; dependências preservadas).
+- **`libs.versions.toml`** ganhou `kotlinx-coroutines-test = 1.7.3`     
+  (necessário para `runTest`); `build.gradle.kts` registra como
+  `testImplementation`.
+- **Mensagens R10 (validação dupla cliente↔servidor):**
+  - `"Não é possível concluir: a tarefa '<título>' ainda está pendente."`
+  - `"Projeto tem <N> tarefa(s) em aberto. Conclua ou cancele antes."`
+  - `"Prazo da tarefa (DD/MM) ultrapassa o prazo do projeto (DD/MM)."`
+- **Pendências / fora de escopo desta lane:**
+  - UX "bonita" para dependências (chips + autocomplete via dropdown
+    de tarefas existentes) — a lane só precisava do modelo + regra;
+    UI textarea foi o suficiente.
+  - Botões "Concluir" nas telas de detalhe de tarefa/projeto — a
+    regra está pronta, falta UI (próxima lane de fluxos).
+  - Backend equivalente (`app/services/`) — ADR-0005: app 100%
+    offline, regra fica só no Android. Quando #14 vier, vai duplicar
+    a regra no FastAPI com as mesmas mensagens.
+
 ## 🚀 Como rodar
 
 ### Pré-requisitos

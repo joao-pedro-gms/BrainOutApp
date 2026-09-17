@@ -10,8 +10,14 @@ import kotlinx.coroutines.flow.Flow
  * (ligada via Hilt). Use cases e ViewModels consomem **apenas** esta
  * interface — nada de Room ou detalhes de storage vaza para `domain/`.
  *
- * Sem regra de negócio aqui: validações de RN01-RN03 serão injetadas
- * em use cases no ciclo 3 (ver `docs/regras-negocio.md`).
+ * Adições da lane RN01-RN03 (issue #11):
+ *  - [getByIdOnce] — snapshot síncrono usado pelos use cases que
+ *    precisam do projeto em uma única leitura (não dá pra usar `Flow`
+ *    dentro de um `suspend` puro: pegar o `first()` é caro e instável
+ *    entre estados).
+ *  - [getByIdsOnce] — usado pelo
+ *    [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirTarefaUseCase]
+ *    se/quando precisarmos checar tarefas contra múltiplos projetos.
  */
 interface ProjetoRepository {
 
@@ -20,6 +26,12 @@ interface ProjetoRepository {
 
     /** Detalhe de um projeto pelo id, reativo. `null` se não existir / soft-deleted. */
     fun getById(id: String): Flow<Projeto?>
+
+    /** Snapshot síncrono de um projeto pelo id. `null` se não existir / soft-deleted. */
+    suspend fun getByIdOnce(id: String): Projeto?
+
+    /** Snapshot síncrono de vários projetos pelos ids. Ids inexistentes são ignorados. */
+    suspend fun getByIdsOnce(ids: List<String>): List<Projeto>
 
     /** Persiste um projeto novo. `id`/`createdAt`/`updatedAt` são de responsabilidade do caller. */
     suspend fun insert(projeto: Projeto)

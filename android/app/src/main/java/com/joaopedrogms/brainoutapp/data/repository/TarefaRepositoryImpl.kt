@@ -20,6 +20,16 @@ import javax.inject.Singleton
  *  - este impl só precisa fazer `.map { it.toDomain() }` — sem I/O extra.
  *  - o cálculo de `deletedAt` fica centralizado aqui.
  *
+ * **Adições da lane RN01-RN03 (issue #11):**
+ *  - `getByProjetoOnce(projetoId)`: snapshot síncrono (uma chamada)
+ *    para o [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirProjetoUseCase]
+ *    contar tarefas em aberto (RN02). Não emite — single read.
+ *  - `getByIdsOnce(ids)`: snapshot síncrono para o
+ *    [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirTarefaUseCase]
+ *    inspecionar dependências (RN01).
+ *  - `update` ganhou `dependencias` no payload automaticamente (via
+ *    [Tarefa.toEntity]).
+ *
  * **RN02 (não aplicada nesta lane):** se o caller tentar inserir uma
  * tarefa com `projeto_id` inexistente (FK), o SQLite joga
  * `SQLiteConstraintException`. O repository **propaga** a exceção; a
@@ -40,14 +50,26 @@ class TarefaRepositoryImpl @Inject constructor(
     override fun getById(id: String): Flow<Tarefa?> =
         dao.getById(id).map { it?.toDomain() }
 
+    override suspend fun getByProjetoOnce(projetoId: String): List<Tarefa> =
+        dao.getByProjetoOnce(projetoId).map { it.toDomain() }
+
+    override suspend fun getByIdsOnce(ids: List<String>): List<Tarefa> {
+        if (ids.isEmpty()) return emptyList()
+        return dao.getByIdsOnce(ids).map { it.toDomain() }
+    }
+
     override suspend fun insert(tarefa: Tarefa) {
         dao.insert(tarefa.toEntity())
-        Log.d(TAG, "insert tarefa id=${tarefa.id} projeto=${tarefa.projetoId} titulo='${tarefa.titulo}'")
+        Log.d(
+            TAG,
+            "insert tarefa id=${tarefa.id} projeto=${tarefa.projetoId} " +
+                "titulo='${tarefa.titulo}' deps=${tarefa.dependencias.size}",
+        )
     }
 
     override suspend fun update(tarefa: Tarefa) {
         dao.update(tarefa.toEntity())
-        Log.d(TAG, "update tarefa id=${tarefa.id}")
+        Log.d(TAG, "update tarefa id=${tarefa.id} deps=${tarefa.dependencias.size}")
     }
 
     override suspend fun delete(id: String) {
