@@ -50,6 +50,9 @@ class TarefaRepositoryImpl @Inject constructor(
     override fun getById(id: String): Flow<Tarefa?> =
         dao.getById(id).map { it?.toDomain() }
 
+    override suspend fun getByIdOnce(id: String): Tarefa? =
+        dao.getByIdOnce(id)?.toDomain()
+
     override suspend fun getByProjetoOnce(projetoId: String): List<Tarefa> =
         dao.getByProjetoOnce(projetoId).map { it.toDomain() }
 

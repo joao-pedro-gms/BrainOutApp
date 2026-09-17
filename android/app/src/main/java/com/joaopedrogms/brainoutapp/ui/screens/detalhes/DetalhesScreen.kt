@@ -271,11 +271,11 @@ private fun Conteudo(
             modifier = Modifier.padding(top = 8.dp),
         )
         Text(
-            text = "Criado em: ${projeto.createdAt.format(BRASIL_DATA_HORA_FORMAT)}",
+            text = "Criado em: ${projeto.createdAt.atZone(java.time.ZoneId.systemDefault()).format(BRASIL_DATA_HORA_FORMAT)}",
             style = MaterialTheme.typography.bodySmall,
         )
         Text(
-            text = "Atualizado em: ${projeto.updatedAt.format(BRASIL_DATA_HORA_FORMAT)}",
+            text = "Atualizado em: ${projeto.updatedAt.atZone(java.time.ZoneId.systemDefault()).format(BRASIL_DATA_HORA_FORMAT)}",
             style = MaterialTheme.typography.bodySmall,
         )
 
