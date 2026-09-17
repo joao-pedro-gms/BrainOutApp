@@ -1,0 +1,14 @@
+# Exemplo de configuração local. Copie para local.properties e edite com seus caminhos reais.
+# local.properties NUNCA vai para o repositório (R12, Seção 6.2).
+
+# Caminho do Android SDK
+sdk.dir=/home/SEU_USUARIO/Android/Sdk
+
+# URL do backend (emulador usa 10.0.2.2 para acessar localhost da máquina)
+API_BASE_URL=http://10.0.2.2:8000
+
+# (Opcional) Keystore de release — caminho fora do repo
+# RELEASE_KEYSTORE_PATH=/caminho/seguro/release.jks
+# RELEASE_KEYSTORE_PASSWORD=...
+# RELEASE_KEY_ALIAS=...
+# RELEASE_KEY_PASSWORD=...

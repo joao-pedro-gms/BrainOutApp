@@ -1,0 +1,21 @@
+# CODEOWNERS
+
+Cada arquivo tem um responsável. PRs sem aprovação do owner ficam bloqueados.
+
+# Owner padrão (ajustar conforme equipe cresce)
+* @joao-pedro-gms
+
+# Workflows
+/.github/workflows/ @joao-pedro-gms
+/scripts/ @joao-pedro-gms
+
+# Documentação
+/docs/ @joao-pedro-gms
+/CONTRIBUTING.md @joao-pedro-gms
+/README.md @joao-pedro-gms
+
+# Android (placeholder — definir owner quando a equipe crescer)
+/android/ @joao-pedro-gms
+
+# Backend (placeholder)
+/backend/ @joao-pedro-gms

@@ -1,0 +1,6 @@
+# Esqueleto de protótipos. PNGs e Figma exports entram aqui na issue #3.
+# Estrutura esperada:
+#   prototipos/telas/01-login.png
+#   prototipos/telas/02-projetos.png
+#   ...
+#   prototipos/memorial.md  (justificativa de UX)
