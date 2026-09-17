@@ -88,9 +88,9 @@ jobs:
         id: gradle
         working-directory: android
         run: |
-          echo "PWD=$(pwd)"
-          echo "LS_ANDROID=$(ls -la)"
-          echo "LS_GRADLEW=$(ls -la gradlew 2>&1 || echo 'gradlew nao encontrado em cwd')"
+          # GitHub Actions checkout nao preserva o bit +x em todos os casos,
+          # entao forcamos chmod antes de checar.
+          chmod +x ./gradlew 2>/dev/null || true
           if [ -x ./gradlew ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
