@@ -122,6 +122,9 @@ lib/
 lib64/
 parts/
 sdist/
+
+# Mas o protótipo web usa src/lib/ para store + regras (não é o "lib" do Python).
+!prototipos/web/src/lib/
 var/
 wheels/
 share/python-wheels/
