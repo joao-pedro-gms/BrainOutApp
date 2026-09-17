@@ -1,0 +1,9 @@
+# Camada data/ — Ciclos 2+ (Room local + Retrofit remoto).
+#
+# Subpacotes:
+#   - data/local/        → Room: DAOs, entities, migrations
+#   - data/remote/       → Retrofit: API, DTOs, mappers
+#   - data/repository/   → Implementação (local + remoto + sync)
+#
+# Por enquanto mantemos .gitkeep — sem classes concretas para evitar imports
+# quebrados sem dependências declaradas. Issue #10 define o schema Room.

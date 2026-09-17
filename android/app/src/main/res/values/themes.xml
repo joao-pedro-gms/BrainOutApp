@@ -1,0 +1,9 @@
+<resources>
+    <!--
+        Tema base Material 3 — os Composables aplicam cores/typography reais
+        via ui/theme/Theme.kt (BrainOutAppTheme). Este XML existe apenas para
+        satisfazer AndroidManifest (android:theme="@style/Theme.BrainOutApp")
+        e fornecer um splash nativo decente antes do Compose montar.
+    -->
+    <style name="Theme.BrainOutApp" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

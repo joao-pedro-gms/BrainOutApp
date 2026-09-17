@@ -1,0 +1,8 @@
+# Camada domain/ — Ciclos 2+.
+#
+# Responsabilidade (arquitetura.md §Camadas):
+#   - domain/model/    → entidades puras (Projeto, Tarefa, Usuario)
+#   - domain/usecase/  → casos de uso (criar projeto, marcar tarefa, validar RN01-RN03)
+#
+# Esta pasta é reservada no ciclo 1 para evitar reorganização estrutural
+# quando o backend stubbed começar a ser consumido.
