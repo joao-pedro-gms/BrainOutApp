@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProjetos, useTarefas } from '../lib/store';
 import { StatusProjetoBadge } from '../components/Badges';
+import { Icon } from '../lib/icons.jsx';
 import { formatarData, validarDatasProjeto } from '../lib/regras';
 
 export default function Projetos({ perfil }) {
@@ -32,8 +33,8 @@ export default function Projetos({ perfil }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900">Projetos</h1>
           <p className="text-slate-600 text-sm">
             {isGerente
@@ -44,10 +45,11 @@ export default function Projetos({ perfil }) {
         {isGerente && (
           <button
             onClick={() => setMostrarForm((v) => !v)}
-            className="btn-primary whitespace-nowrap"
+            className="btn-primary whitespace-nowrap shrink-0"
           >
-            <span className="hidden sm:inline">{mostrarForm ? 'Cancelar' : '+ Novo projeto'}</span>
-            <span className="sm:hidden">{mostrarForm ? 'Cancelar' : '+ Novo'}</span>
+            <Icon name="plus" size="sm" />
+            <span className="hidden sm:inline">{mostrarForm ? 'Cancelar' : 'Novo projeto'}</span>
+            <span className="sm:hidden">{mostrarForm ? 'Cancelar' : 'Novo'}</span>
           </button>
         )}
       </div>
@@ -104,16 +106,29 @@ export default function Projetos({ perfil }) {
                   <p className="text-sm text-slate-600 mb-3 line-clamp-2">{p.descricao}</p>
                 )}
                 <div className="mt-auto flex items-center justify-between text-xs text-slate-500">
-                  <span>Início: {formatarData(p.dataInicio)}</span>
-                  <span>Prazo: <strong className="text-slate-700">{formatarData(p.prazo)}</strong></span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="calendar" size="xs" />
+                    Início: {formatarData(p.dataInicio)}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="calendarClock" size="xs" />
+                    Prazo: <strong className="text-slate-700">{formatarData(p.prazo)}</strong>
+                  </span>
                 </div>
                 <div className="mt-2 text-xs text-slate-500 flex items-center gap-3">
-                  <span>📋 {tarefasDoProjeto.length} tarefa(s)</span>
-                  <span className="text-amber-600">{abertas} em aberto</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="clipboardList" size="xs" />
+                    {tarefasDoProjeto.length} tarefa(s)
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-amber-600">
+                    <Icon name="play" size="xs" />
+                    {abertas} em aberto
+                  </span>
                 </div>
                 {isGerente && (
                   <div className="mt-3 pt-3 border-t border-slate-100 flex justify-end">
-                    <button onClick={() => handleRemover(p.id)} className="text-xs text-red-600 hover:text-red-700">
+                    <button onClick={() => handleRemover(p.id)} className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700">
+                      <Icon name="trash" size="xs" />
                       Excluir
                     </button>
                   </div>
@@ -130,7 +145,9 @@ export default function Projetos({ perfil }) {
 function EmptyState({ mensagem }) {
   return (
     <div className="card p-10 text-center text-slate-500">
-      <p className="text-5xl mb-3">📁</p>
+      <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center">
+        <Icon name="folderOpen" size="xl" strokeWidth={1.5} />
+      </div>
       <p>{mensagem}</p>
     </div>
   );

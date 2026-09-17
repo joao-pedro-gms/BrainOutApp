@@ -8,6 +8,7 @@ import ProjetoDetalhe from './screens/ProjetoDetalhe.jsx';
 import Tarefas from './screens/Tarefas.jsx';
 import TarefaForm from './screens/TarefaForm.jsx';
 import Dashboard from './screens/Dashboard.jsx';
+import { Icon } from './lib/icons.jsx';
 import { USUARIOS } from './data/mock';
 
 const KEY_PERFIL = 'brainoutapp:perfil:v1';
@@ -39,10 +40,12 @@ export default function App() {
 
   if (!perfil) {
     return (
-      <Routes>
-        <Route path="/login"  element={<Login onLogin={onLogin} />} />
-        <Route path="*"       element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/login"  element={<Login onLogin={onLogin} />} />
+          <Route path="*"       element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Layout>
     );
   }
 
@@ -69,7 +72,9 @@ export default function App() {
 function NaoEncontrado({ onSair }) {
   return (
     <div className="text-center py-16">
-      <p className="text-6xl mb-4">🧭</p>
+      <div className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center">
+        <Icon name="compass" size="2xl" strokeWidth={1.5} />
+      </div>
       <h2 className="text-2xl font-semibold mb-2">Página não encontrada</h2>
       <p className="text-slate-600 mb-6">A rota pedida não existe no protótipo.</p>
       <button className="btn-secondary" onClick={onSair}>Voltar ao login</button>

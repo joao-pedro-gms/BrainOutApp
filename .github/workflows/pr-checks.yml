@@ -36,8 +36,8 @@ jobs:
       - name: Branch de origem usa prefixo padrão
         run: |
           BRANCH="${{ github.head_ref }}"
-          if ! echo "$BRANCH" | grep -qE '^(feature|fix|docs|chore|test|dependabot)/'; then
-            echo "Branch '$BRANCH' fora do padrão. Use feature/, fix/, docs/, chore/, test/ ou dependabot/."
+          if ! echo "$BRANCH" | grep -qE '^(feature|fix|docs|chore|test|refactor|ci|audit|dependabot)/'; then
+            echo "Branch '$BRANCH' fora do padrão. Use feature/, fix/, docs/, chore/, test/, refactor/, ci/, audit/ ou dependabot/."
             exit 1
           fi
           echo "Branch '$BRANCH' ok"
