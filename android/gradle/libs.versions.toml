@@ -23,6 +23,7 @@ espresso = "3.6.1"
 okhttp = "4.12.0"
 
 # DataStore Preferences — persistência local do perfil (ADR-0006)
+room = "2.6.1"
 
 [libraries]
 # Compose BOM mantém todas as libs Compose alinhadas (ver versões no BOM).
@@ -54,6 +55,11 @@ okhttp                         = { group = "com.squareup.okhttp3",         name 
 
 # DataStore (Preferences) — perfil local (ADR-0006)
 androidx-datastore-preferences = { group = "androidx.datastore",           name = "datastore-preferences",                version.ref = "datastore-preferences" }
+
+# Room (persistência local — ciclo 2, issue #8 CRUD Projetos)
+androidx-room-runtime          = { group = "androidx.room",                name = "room-runtime",                          version.ref = "room" }
+androidx-room-ktx              = { group = "androidx.room",                name = "room-ktx",                              version.ref = "room" }
+androidx-room-compiler         = { group = "androidx.room",                name = "room-compiler",                         version.ref = "room" }
 
 # Testes
 junit                          = { group = "junit",                        name = "junit",                                 version.ref = "junit" }
