@@ -47,8 +47,9 @@ jobs:
         run: |
           cd backend
           if [ -f uv.lock ]; then
-            uv sync --frozen --no-group dev
-            uv run --no-sync pip-audit || exit 1
+            # Sync com grupo dev para ter pip-audit disponível
+            uv sync --frozen --group dev
+            uv run pip-audit || exit 1
           else
             echo "backend/uv.lock ainda não existe, pulando"
           fi
