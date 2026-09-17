@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useProjetos, useTarefas } from '../lib/store';
 import { StatusTarefaBadge, PrioridadeBadge, StatusProjetoBadge } from '../components/Badges';
+import { Icon } from '../lib/icons.jsx';
 import { formatarData, tarefaAtrasada, diasAte } from '../lib/regras';
 
 export default function ProjetoDetalhe({ perfil }) {
@@ -14,7 +15,9 @@ export default function ProjetoDetalhe({ perfil }) {
   if (!projeto) {
     return (
       <div className="card p-8 text-center">
-        <p className="text-5xl mb-3">🔍</p>
+        <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center">
+          <Icon name="compass" size="xl" strokeWidth={1.5} />
+        </div>
         <h2 className="text-xl font-semibold mb-2">Projeto não encontrado</h2>
         <Link to="/projetos" className="text-brand-600 hover:underline">← Voltar para projetos</Link>
       </div>
@@ -44,13 +47,21 @@ export default function ProjetoDetalhe({ perfil }) {
         </div>
         {projeto.descricao && <p className="text-slate-600 mb-4">{projeto.descricao}</p>}
         <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-          <span>📅 Início: <strong>{formatarData(projeto.dataInicio)}</strong></span>
-          <span>🎯 Prazo: <strong>{formatarData(projeto.prazo)}</strong>
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="calendar" size="sm" className="text-slate-400" />
+            Início: <strong className="text-slate-700">{formatarData(projeto.dataInicio)}</strong>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="calendarClock" size="sm" className="text-slate-400" />
+            Prazo: <strong className="text-slate-700">{formatarData(projeto.prazo)}</strong>
             {diasAte(projeto.prazo) != null && (
               <span className="text-slate-400"> ({diasAte(projeto.prazo) >= 0 ? `em ${diasAte(projeto.prazo)}d` : `${Math.abs(diasAte(projeto.prazo))}d atrás`})</span>
             )}
           </span>
-          <span>📋 {tarefasDoProjeto.length} tarefa(s)</span>
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="clipboardList" size="sm" className="text-slate-400" />
+            {tarefasDoProjeto.length} tarefa(s)
+          </span>
         </div>
       </div>
 
@@ -63,7 +74,9 @@ export default function ProjetoDetalhe({ perfil }) {
 
       {tarefasDoProjeto.length === 0 ? (
         <div className="card p-8 text-center text-slate-500">
-          <p className="text-4xl mb-2">📋</p>
+          <div className="mx-auto mb-2 w-10 h-10 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center">
+            <Icon name="clipboardList" size="lg" strokeWidth={1.5} />
+          </div>
           <p>Nenhuma tarefa nesse projeto ainda.</p>
         </div>
       ) : (
@@ -77,9 +90,14 @@ export default function ProjetoDetalhe({ perfil }) {
                     <span className="font-medium text-slate-900">{t.titulo}</span>
                     <StatusTarefaBadge status={t.status} />
                     <PrioridadeBadge prioridade={t.prioridade} />
-                    {atrasada && <span className="badge bg-red-100 text-red-700">⚠ Atrasada</span>}
+                    {atrasada && (
+                      <span className="badge bg-red-100 text-red-700 inline-flex items-center gap-1">
+                        <Icon name="alert" size="xs" /> Atrasada
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-slate-500 inline-flex items-center gap-1">
+                    <Icon name="calendar" size="xs" />
                     Prazo: {formatarData(t.prazo)}
                   </div>
                 </div>

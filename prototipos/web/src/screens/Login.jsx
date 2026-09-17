@@ -1,13 +1,16 @@
 import { USUARIOS } from '../data/mock';
+import { Icon } from '../lib/icons.jsx';
 
 export default function Login({ onLogin }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-slate-100 grid place-items-center px-4">
-      <div className="card w-full max-w-md p-8">
+    <div className="min-h-full grid place-items-center px-4 py-8">
+      <div className="w-full max-w-sm card p-7">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-3">🧠</div>
+          <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-brand-100 text-brand-700 grid place-items-center">
+            <Icon name="projects" size="2xl" strokeWidth={1.75} />
+          </div>
           <h1 className="text-2xl font-bold text-slate-900">BrainOutApp</h1>
-          <p className="text-slate-600 text-sm mt-1">Gestão de projetos e tarefas — protótipo</p>
+          <p className="text-slate-600 text-sm mt-1">Gestão de projetos e tarefas</p>
         </div>
 
         <p className="text-sm text-slate-600 mb-4 text-center">
@@ -15,26 +18,29 @@ export default function Login({ onLogin }) {
         </p>
 
         <div className="space-y-3">
-          {USUARIOS.map((u) => (
-            <button
-              key={u.id}
-              onClick={() => onLogin(u.id)}
-              className="w-full text-left card p-4 hover:border-brand-400 hover:shadow-md transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-semibold">
-                  {u.nome.split(' ').map((p) => p[0]).slice(0, 2).join('')}
+          {USUARIOS.map((u) => {
+            const isGerente = u.perfil === 'gerente';
+            return (
+              <button
+                key={u.id}
+                onClick={() => onLogin(u.id)}
+                className="w-full text-left card p-4 hover:border-brand-400 hover:shadow-md transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center shrink-0">
+                    <Icon name="user" size="md" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-slate-900">{u.nome}</div>
+                    <div className="text-xs text-slate-500">{u.email}</div>
+                  </div>
+                  <span className={`badge ${isGerente ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-700'}`}>
+                    {isGerente ? 'Gerente' : 'Colaborador'}
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <div className="font-semibold text-slate-900">{u.nome}</div>
-                  <div className="text-xs text-slate-500">{u.email}</div>
-                </div>
-                <span className={`badge ${u.perfil === 'gerente' ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-700'}`}>
-                  {u.perfil === 'gerente' ? 'Gerente' : 'Colaborador'}
-                </span>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
 
         <p className="text-xs text-slate-400 text-center mt-6">

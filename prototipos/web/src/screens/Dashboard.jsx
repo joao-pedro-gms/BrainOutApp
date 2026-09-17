@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProjetos, useTarefas } from '../lib/store';
 import GraficoBarras from '../components/GraficoBarras';
 import { StatusTarefaBadge, StatusProjetoBadge } from '../components/Badges';
+import { Icon } from '../lib/icons.jsx';
 import { USUARIOS, HOJE } from '../data/mock';
 import { tarefaAtrasada, formatarData } from '../lib/regras';
 
@@ -56,10 +57,10 @@ export default function Dashboard({ perfil }) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <CardStat titulo="Tarefas concluídas" valor={stats.concluidas}  emoji="✅" cor="text-green-700" />
-        <CardStat titulo="Em aberto"          valor={stats.emAberto}    emoji="📋" cor="text-blue-700" />
-        <CardStat titulo="Atrasadas"          valor={stats.atrasadas}    emoji="⚠️" cor="text-red-700" destaque={stats.atrasadas > 0} />
-        <CardStat titulo="Vencem em 7 dias"   valor={stats.proximo7d}   emoji="📅" cor="text-amber-700" />
+        <CardStat titulo="Tarefas concluídas" valor={stats.concluidas}  iconName="check"      cor="text-green-700" />
+        <CardStat titulo="Em aberto"          valor={stats.emAberto}    iconName="clipboardList" cor="text-blue-700" />
+        <CardStat titulo="Atrasadas"          valor={stats.atrasadas}    iconName="alert"      cor="text-red-700"   destaque={stats.atrasadas > 0} />
+        <CardStat titulo="Vencem em 7 dias"   valor={stats.proximo7d}   iconName="calendarClock" cor="text-amber-700" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
@@ -112,9 +113,12 @@ export default function Dashboard({ perfil }) {
 
       {!isGerente && (
         <div className="card p-4 mt-6 bg-slate-50 border-slate-300">
-          <p className="text-sm text-slate-700">
-            <strong>👀 Nota:</strong> como Colaborador, você está vendo as estatísticas globais.
-            No app real (issue #7) o dashboard filtra para mostrar apenas suas tarefas e os projetos em que você participa.
+          <p className="text-sm text-slate-700 inline-flex items-start gap-2">
+            <Icon name="info" size="sm" className="text-slate-500 shrink-0 mt-0.5" />
+            <span>
+              <strong>Nota:</strong> como Colaborador, você está vendo as estatísticas globais.
+              No app real (issue #7) o dashboard filtra para mostrar apenas suas tarefas e os projetos em que você participa.
+            </span>
           </p>
         </div>
       )}
@@ -122,12 +126,12 @@ export default function Dashboard({ perfil }) {
   );
 }
 
-function CardStat({ titulo, valor, emoji, cor, destaque }) {
+function CardStat({ titulo, valor, iconName, cor, destaque }) {
   return (
     <div className={`card p-4 ${destaque ? 'border-red-300 bg-red-50' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wide text-slate-500">{titulo}</span>
-        <span className="text-xl">{emoji}</span>
+        <Icon name={iconName} size="md" className={cor} />
       </div>
       <div className={`mt-2 text-3xl font-bold ${cor}`}>{valor}</div>
     </div>

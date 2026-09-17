@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useProjetos, useTarefas } from '../lib/store';
+import { Icon } from '../lib/icons.jsx';
 import { USUARIOS } from '../data/mock';
 import { validarPrazoTarefa } from '../lib/regras';
 
@@ -56,7 +57,9 @@ export default function TarefaForm({ perfil }) {
   if (!isGerente && !editando) {
     return (
       <div className="card p-8 text-center">
-        <p className="text-5xl mb-3">🔒</p>
+        <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center">
+          <Icon name="lock" size="xl" strokeWidth={1.5} />
+        </div>
         <p className="text-slate-600">Colaborador não cria tarefas (apenas Gerente).</p>
       </div>
     );
