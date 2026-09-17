@@ -1,0 +1,2 @@
+# Placeholder para que o GitHub Actions workflow backend-ci encontre o módulo.
+# A estrutura real (app/, pyproject.toml, requirements.txt) será criada na issue #14.

@@ -1,0 +1,4 @@
+# requirements mínimo para o backend encontrar um pacote pip válido.
+# A lista real com fastapi/uvicorn/sqlalchemy/pytest será criada na issue #14.
+pytest>=8.0
+ruff>=0.6

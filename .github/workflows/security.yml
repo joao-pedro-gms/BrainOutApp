@@ -15,8 +15,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      # gitleaks-action@v2 passou a exigir licença comercial; usamos a CLI oficial
+      # (open source, sem custo). Binário baixado direto do release do GitHub.
+      - name: Instalar gitleaks
+        run: |
+          set -euo pipefail
+          VERSION="8.18.4"
+          URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          curl -sSfL "$URL" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+          chmod +x /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Rodar gitleaks
+        run: gitleaks detect --source . --redact --no-banner
 
   # Checagem de dependências do backend com pip-audit, quando existir
   dep-audit:

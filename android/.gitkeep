@@ -1,0 +1,2 @@
+# Placeholder para que o GitHub Actions workflow android-ci encontre o módulo.
+# A estrutura real (app/, build.gradle.kts, etc.) será criada na issue #6.
