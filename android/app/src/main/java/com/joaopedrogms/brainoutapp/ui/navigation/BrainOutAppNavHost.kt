@@ -20,6 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.joaopedrogms.brainoutapp.ui.screens.applock.AppLockScreen
 import com.joaopedrogms.brainoutapp.ui.screens.criacao.CriacaoScreen
 import com.joaopedrogms.brainoutapp.ui.screens.dashboard.DashboardScreen
 import com.joaopedrogms.brainoutapp.ui.screens.detalhes.DetalhesScreen
@@ -34,13 +35,15 @@ import com.joaopedrogms.brainoutapp.viewmodel.RootViewModel
  * NavHost do app.
  *
  * Define o grafo de navegação entre as telas e decide a start
- * destination com base no perfil local (ADR-0006):
+ * destination com base no perfil local e no estado de AppLock (ADR-0006):
  *
  *  - perfil indefinido → `onboarding` (escolha de Gerente/Colaborador).
- *  - perfil definido    → `projetos` (home; `login` permanece no grafo
- *                          por enquanto como stub — será reavaliada em
- *                          ciclo futuro, já que ADR-0006 eliminou auth
- *                          online).
+ *  - perfil definido **e** AppLock ativo → tela standalone
+ *    `AppLockScreen` (não fica no NavHost; trata o unlock como um
+ *    `refresh()` do estado raiz).
+ *  - perfil definido **e** AppLock inativo → `projetos` (home;
+ *    `login` permanece no grafo por enquanto como stub — será
+ *    reavaliada em ciclo futuro, já que ADR-0006 eliminou auth online).
  *
  * A decisão da start destination fica em [RootViewModel] (não dá para
  * fazer `suspend` dentro do `NavHost(startDestination = …)`).
@@ -60,6 +63,12 @@ fun BrainOutAppNavHost(
 
     when (startState) {
         RootStartState.Loading -> RootLoadingScreen()
+        RootStartState.NeedsUnlock -> AppLockScreen(
+            // AppLock é uma tela standalone (fora do NavHost) — após
+            // desbloqueio, reavalia o estado raiz para cair na home.
+            // ADR-0006.
+            onUnlocked = { rootViewModel.refresh() },
+        )
         RootStartState.NeedsOnboarding, RootStartState.Authenticated -> {
             val startDestination = when (startState) {
                 RootStartState.NeedsOnboarding -> Destinations.ONBOARDING

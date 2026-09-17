@@ -45,12 +45,16 @@ android/
         │       │   ├── model/              # Projeto + StatusProjeto + mappers entity↔domain
         │       │   ├── repository/         # interface ProjetoRepository
         │       │   └── usecase/            # Criar/Editar/Listar/Excluir Projeto
-        │       ├── data/                   # local (Room) + repository (impl)
-        │       │   ├── local/              # entity/ProjetoEntity, dao/ProjetoDao, db/AppDatabase
-        │       │   ├── remote/             # reservado (vazio, ADR-0005)
-        │       │   └── repository/         # ProjetoRepositoryImpl
-        │       └── di/
-        │           └── AppModule.kt        # @InstallIn(SingletonComponent::class) — Room + Hilt
+        │   │       ├── data/                   # local (Room) + repository (impl)
+        │   │       │   ├── local/              # entity/ProjetoEntity, dao/ProjetoDao, db/AppDatabase
+        │   │       │   ├── preferences/        # PerfilPreferences (DataStore)
+        │   │       │   ├── remote/             # reservado (vazio, ADR-0005)
+        │   │       │   ├── repository/         # ProjetoRepositoryImpl
+        │   │       │   └── security/           # SecurityPreferences (EncryptedSharedPreferences + PBKDF2, ADR-0006)
+        │   │       └── di/
+        │   │           ├── AppModule.kt        # @InstallIn(SingletonComponent::class) — Room + Hilt
+        │   │           ├── PreferencesModule.kt
+        │   │           └── SecurityModule.kt   # AppLock (MasterKey + EncryptedSharedPreferences)
         └── test/
             └── java/com/joaopedrogms/brainoutapp/
                 └── AppSmokeTest.kt
@@ -115,6 +119,36 @@ argumento de navegação (`NavType.StringType`).
 - **`ui/navigation/Destinations.kt`** ganhou a rota `criacao/{projetoId}` (helper
   canônico); o registro no `BrainOutAppNavHost.kt` é responsabilidade da lane
   de navegação.
+
+## 🔐 AppLock (ADR-0006 — opcional)
+
+Bloqueio do app no cold start com **senha local opcional**:
+
+- **Storage:** `androidx.security:security-crypto` (MasterKey AES256_GCM +
+  `EncryptedSharedPreferences`). O hash da senha **nunca** toca disco em
+  texto plano.
+- **KDF:** PBKDF2-HMAC-SHA256, 100.000 iterações, salt aleatório de 16 bytes.
+- **Validação:** comparação constant-time para evitar timing-attack local.
+- **Política de tentativas:** 3 falhas → cooldown de 30s (defesa contra
+  força-bruta local). Após o cooldown, contador zera.
+- **"Esqueci a senha":** não há recovery — `AlertDialog` explica que isso
+  remove o AppLock mas preserva os dados (perfil/projetos/tarefas).
+- **Fluxo de tela:** novo estado `RootStartState.NeedsUnlock`. O
+  `BrainOutAppNavHost` renderiza `AppLockScreen` **fora** do `NavHost`
+  (tela standalone) enquanto `NeedsUnlock`. Após `unlock()`, chama
+  `rootViewModel.refresh()` e o NavHost monta a home (`projetos`).
+- **Arquivos novos:**
+  - `data/security/SecurityPreferences.kt` (interface + impl)
+  - `di/SecurityModule.kt` (MasterKey + EncryptedSharedPreferences + bind)
+  - `ui/screens/applock/AppLockViewModel.kt`
+  - `ui/screens/applock/AppLockScreen.kt`
+- **Arquivos estendidos:** `RootViewModel.kt` (novo estado `NeedsUnlock` +
+  injeção do `SecurityPreferencesRepository`), `BrainOutAppNavHost.kt`
+  (ramo `NeedsUnlock` no `when`), `gradle/libs.versions.toml` e
+  `app/build.gradle.kts` (dep `androidx.security:security-crypto:1.1.0-alpha06`).
+- **Fora do escopo desta lane (próxima):** tela de Configurações para
+  definir/alterar/remover a senha. Hoje o AppLock pode ser removido
+  apenas via "Esqueci a senha" no cold start.
 
 ## 🚀 Como rodar
 

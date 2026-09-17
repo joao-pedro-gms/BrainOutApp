@@ -101,6 +101,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Security — EncryptedSharedPreferences para hash da senha (ADR-0006, AppLock)
+    implementation(libs.androidx.security.crypto)
+
     // Testes
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
