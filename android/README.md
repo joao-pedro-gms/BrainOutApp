@@ -128,6 +128,31 @@ argumento de navegação (`NavType.StringType`).
 ## 🔐 AppLock (ADR-0006 — opcional)
 
 
+## 🔁 O que entrou no ciclo 4 (issue #12 — Filtro + Busca + Ordenação)
+
+- **DAO** (`ProjetoDao` e `TarefaDao`): novas queries `buscarPorNome`,
+  `buscarPorPrazo`, `buscarPorCriacao` (projetos) e `buscarPorPrazo`,
+  `buscarPorPrioridade`, `buscarPorTitulo` (tarefas). Todas usam `LIKE`
+  case-insensitive (`LOWER(col) LIKE LOWER(:query)`) e filtro opcional
+  de status via `(:statusFiltro IS NULL OR status = :statusFiltro)`.
+  Queries estáticas — Room valida em build time.
+- **ViewModels**: `ProjetoListViewModel` e `TarefaListViewModel` agora
+  expõem `query`, `statusFiltro`/`filtroStatus` e `sortBy` como
+  `StateFlow`s. Pipeline `combine → debounce(300ms) → flatMapLatest`
+  consome o DAO direto (a interface `domain/repository/` está fora do
+  escopo desta lane). Filtro de status das tarefas é aplicado no domínio
+  (em memória) para evitar combinatorial explosion de queries no DAO.
+- **UI**: componente compartilhado `BuscaSearchBar` (Material 3 `SearchBar`)
+  e `OrdenacaoDropdown` (Material 3 `ExposedDropdownMenuBox`) em
+  `ui/components/`. Ambas as telas (`ProjetosScreen`, `TarefasScreen`)
+  ganharam: `BuscaSearchBar` no topo + `LazyRow` de `FilterChip` por
+  status (Projetos) + `OrdenacaoDropdown` (NOME/PAZO/CRIAÇÃO para
+  projetos; PRAZO/PRIORIDADE/TÍTULO para tarefas).
+- **Empty state** diferencia "nenhum item" de "nenhum resultado com
+  filtro ativo" — texto e CTA mudam.
+- Não mexe em `TarefaFormScreen`, `ProjetoFormScreen`, `DetalhesScreen`,
+  navegação, tema, preferências, segurança, DI ou domínio.
+
 ## 🔁 O que entrou no ciclo 3 (issue #10 — CRUD Tarefas)
 
 
