@@ -21,10 +21,4 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     // ktlint lê .editorconfig automaticamente; regras do projeto já estão lá
     // (4 spaces, 120 col, LF, UTF-8).
-    // ktlint 12.1.0 tem regras de Kotlin Script que quebram em expressoes
-    // multi-linha. Excluimos *.kts porque os build.gradle.kts sao poucos
-    // e revisados a mao (config via ktlint.excludes).
-    tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.KtlintCheck>().configureEach {
-        excludes += "**/*.kts"
-    }
 }

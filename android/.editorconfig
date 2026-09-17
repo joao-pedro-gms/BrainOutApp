@@ -19,5 +19,11 @@ max_line_length = 120
 [*.{xml,gradle,toml}]
 indent_size = 4
 
+# ktlint 12.1.0 tem regras de Kotlin Script (.kts) que disparam em
+# expressoes multi-linha. Como os build.gradle.kts sao poucos e
+# revisados a mao, nao rodamos ktlint neles.
+[*.kts]
+ktlint = disabled
+
 [*.md]
 trim_trailing_whitespace = false
