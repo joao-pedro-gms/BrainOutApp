@@ -53,6 +53,9 @@ class FakeTarefaRepository : TarefaRepository {
     override fun getById(id: String): Flow<Tarefa?> =
         state.map { it[id] }
 
+    override suspend fun getByIdOnce(id: String): Tarefa? =
+        state.value[id]
+
     /** Helper de teste: snapshot único de **todas** as tarefas (ativas). */
     fun getAllOnce(): List<Tarefa> = state.value.values.toList()
 
