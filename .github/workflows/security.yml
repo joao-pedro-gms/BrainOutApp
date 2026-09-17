@@ -15,19 +15,42 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      # gitleaks-action@v2 passou a exigir licença comercial; usamos a CLI oficial
+      # (open source, sem custo). Instalada em /home/runner/work por causa de permissões.
+      - name: Instalar gitleaks
+        run: |
+          set -euo pipefail
+          VERSION="8.18.4"
+          URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          curl -sSfL "$URL" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          sudo chmod +x /usr/local/bin/gitleaks
+          gitleaks version
 
-  # Checagem de dependências do backend com pip-audit, quando existir
+      - name: Rodar gitleaks
+        run: gitleaks detect --source . --redact --no-banner
+
+  # Checagem de dependências do backend com pip-audit (via uv),
+  # acionada quando existir uv.lock.
   dep-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: pip-audit
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: uv pip audit
         run: |
-          if [ -f backend/requirements.txt ]; then
-            pip install pip-audit
-            pip-audit -r backend/requirements.txt || exit 1
+          cd backend
+          if [ -f uv.lock ]; then
+            # Sync com grupo dev para ter pip-audit disponível
+            uv sync --frozen --group dev
+            uv run pip-audit || exit 1
           else
-            echo "backend/requirements.txt ainda não existe, pulando"
+            echo "backend/uv.lock ainda não existe, pulando"
           fi

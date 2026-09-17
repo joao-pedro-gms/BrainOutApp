@@ -1,0 +1,48 @@
+[project]
+name = "brainoutapp-backend"
+version = "0.1.0"
+description = "API REST para o BrainOutApp (Projeto Integrador ADS 2026/2)"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+# Dependências reais (fastapi, sqlalchemy, etc.) entram na issue #14.
+dependencies = []
+
+# Pacote gerenciado por uv (https://docs.astral.sh/uv/). Lockfile em uv.lock.
+# Para usar: uv sync                  (instala tudo)
+#            uv run pytest            (roda pytest no venv)
+#            uv run ruff check .      (roda ruff no venv)
+#            uv add fastapi           (adiciona dep + atualiza lock)
+[tool.uv]
+package = true                              # build wheel/sdist quando publicar
+managed = true                              # uv gerencia o .venv
+
+[dependency-groups]
+# Grupo "dev" — instalado por padrão com `uv sync` em ambiente local.
+# Use `uv sync --no-group dev` em produção ou containers.
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.6",
+    "pip-audit>=2.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N"]
+ignore = ["E501"]  # line-length é tratado pelo formatter
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers"
