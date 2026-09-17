@@ -1,6 +1,6 @@
 # Política de Segredos
 
-Nada de credencial no repo (R12, Seção 6.2 do norteador). Esta página é a fonte da verdade — quando o agente tiver dúvida, consulta aqui.
+Nada de credencial no repo (R12, Seção 6.2 do norteador). Esta página é a fonte da verdade para quem estiver contribuindo.
 
 ## O que NUNCA vai pro repo
 
