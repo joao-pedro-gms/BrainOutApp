@@ -1,0 +1,8 @@
+# Camada viewmodel/ — Ciclos 2+.
+#
+# Responsabilidade (arquitetura.md §Camadas):
+#   StateFlow da UI, eventos, mapeamento domain ↔ ui state.
+#
+# Esta pasta é criada vazia no ciclo 1 para reservar o pacote e evitar
+# reorganização estrutural nas próximas issues. Os primeiros ViewModels
+# chegam com a issue #7 (auth) e #10 (criação de projeto).

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Logotipo placeholder: letra "B" estilizada. Será substituído pelo
+    ícone oficial nas próximas sprints.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38,32 L60,32 C70,32 76,38 76,46 C76,52 73,56 68,58 C74,60 78,65 78,72 C78,80 71,86 60,86 L38,86 Z M48,42 L48,54 L58,54 C62,54 65,52 65,48 C65,44 62,42 58,42 Z M48,62 L48,76 L60,76 C64,76 67,74 67,69 C67,64 64,62 60,62 Z" />
+</vector>

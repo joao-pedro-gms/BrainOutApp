@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Auto-backup desabilitado no manifesto (allowBackup=false).
+    Estes arquivos ficam aqui apenas para satisfazer AndroidManifest
+    durante ciclos futuros (R7 — credenciais não devem ser sincronizadas).
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="auth_tokens.xml" />
+</full-backup-content>
