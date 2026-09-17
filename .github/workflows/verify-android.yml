@@ -88,11 +88,14 @@ jobs:
         id: gradle
         working-directory: android
         run: |
+          echo "PWD=$(pwd)"
+          echo "LS_ANDROID=$(ls -la)"
+          echo "LS_GRADLEW=$(ls -la gradlew 2>&1 || echo 'gradlew nao encontrado em cwd')"
           if [ -x ./gradlew ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::error::gradlew ausente — Android nao pode ser buildado"
+            echo "::error::gradlew ausente em $(pwd) — Android nao pode ser buildado"
             exit 1
           fi
 
