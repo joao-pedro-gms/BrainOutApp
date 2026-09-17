@@ -88,17 +88,9 @@ jobs:
         id: gradle
         working-directory: android
         run: |
-          echo "DEBUG: working-directory aplicado = $(pwd)"
           chmod +x ./gradlew 2>/dev/null || true
           chmod +x ./gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
-          echo "DEBUG: ls -la gradlew:"
-          ls -la ./gradlew
-          echo "DEBUG: stat gradlew:"
-          stat ./gradlew
-          echo "DEBUG: test -x gradlew -> $?"
-          test -x ./gradlew && GRADLE_OK=1 || GRADLE_OK=0
-          echo "DEBUG: GRADLE_OK=$GRADLE_OK"
-          if [ "$GRADLE_OK" = "1" ]; then
+          if ./gradlew --version >/dev/null 2>&1; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
