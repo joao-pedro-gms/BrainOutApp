@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BrainOutApp — Wireframes</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #fafafa;
+      color: #1f2937;
+    }
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 24px;
+    }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p.lead { margin: 0; color: #6b7280; font-size: 14px; }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .15s;
+    }
+    .card:hover { border-color: #6366f1; }
+    .card .thumb {
+      width: 100%;
+      background: #fafafa;
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .card .thumb svg, .card .thumb object {
+      width: 100%;
+      height: auto;
+      max-height: 460px;
+      display: block;
+    }
+    .card .meta { padding: 12px 14px; }
+    .card h2 { margin: 0 0 4px; font-size: 14px; }
+    .card small { color: #9ca3af; font-size: 12px; font-family: ui-monospace, monospace; }
+    footer {
+      padding: 24px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧠 BrainOutApp — Wireframes</h1>
+    <p class="lead">
+      Wireframes estáticos de baixa fidelidade (estilo Balsamiq) das 6 telas do app.
+      Dimensões: 393×852 (iPhone 14 Pro).
+      Clique em qualquer tela para abrir o SVG em tamanho real.
+    </p>
+  </header>
+
+  <main>
+    <div class="grid">
+      <a class="card" href="01-login.svg">
+        <div class="thumb"><object type="image/svg+xml" data="01-login.svg" aria-label="Login"></object></div>
+        <div class="meta">
+          <h2>1. Login</h2>
+          <small>R2 — 2 perfis (Gerente / Colaborador)</small>
+        </div>
+      </a>
+
+      <a class="card" href="02-projetos.svg">
+        <div class="thumb"><object type="image/svg+xml" data="02-projetos.svg" aria-label="Projetos"></object></div>
+        <div class="meta">
+          <h2>2. Projetos</h2>
+          <small>R3, R5, R12 — lista + CRUD</small>
+        </div>
+      </a>
+
+      <a class="card" href="03-projeto-detalhe.svg">
+        <div class="thumb"><object type="image/svg+xml" data="03-projeto-detalhe.svg" aria-label="Detalhe do projeto"></object></div>
+        <div class="meta">
+          <h2>3. Detalhe do projeto</h2>
+          <small>R3 — info + tarefas do projeto</small>
+        </div>
+      </a>
+
+      <a class="card" href="04-tarefas.svg">
+        <div class="thumb"><object type="image/svg+xml" data="04-tarefas.svg" aria-label="Tarefas"></object></div>
+        <div class="meta">
+          <h2>4. Tarefas</h2>
+          <small>R9 — lista global + filtros</small>
+        </div>
+      </a>
+
+      <a class="card" href="05-tarefa-form.svg">
+        <div class="thumb"><object type="image/svg+xml" data="05-tarefa-form.svg" aria-label="Form de tarefa"></object></div>
+        <div class="meta">
+          <h2>5. Form de tarefa</h2>
+          <small>R3, R4 — com cenario de erro RN03</small>
+        </div>
+      </a>
+
+      <a class="card" href="06-dashboard.svg">
+        <div class="thumb"><object type="image/svg+xml" data="06-dashboard.svg" aria-label="Dashboard"></object></div>
+        <div class="meta">
+          <h2>6. Dashboard</h2>
+          <small>R9 — KPIs + graficos + proximas tarefas</small>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    BrainOutApp · PI ADS / PUC-GO 2026/2 · Wireframes v1
+  </footer>
+</body>
+</html>

@@ -1,14 +1,13 @@
-name: Deploy prototipo to GitHub Pages
+name: Deploy wireframes to GitHub Pages
 
 on:
   push:
     branches: [master]
     paths:
-      - 'prototipos/web/**'
+      - 'prototipos/wireframes/**'
       - '.github/workflows/pages.yml'
-  workflow_dispatch:        # permite rodar manualmente em Actions
+  workflow_dispatch:
 
-# Garante que só uma execução roda por vez (evita deploys conflitantes)
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -16,35 +15,28 @@ concurrency:
 permissions:
   contents: read
   pages: write
-  id-token: write        # necessário para actions/deploy-pages
+  id-token: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: prototipos/web
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: prototipos/web/package-lock.json
-
-      - name: Instalar dependências
-        run: npm ci --include=dev --no-audit --no-fund
-
-      - name: Build (Vite)
-        run: npm run build
+      - name: Copiar wireframes para pasta de publicacao
+        run: |
+          # O Pages serve em /$repo/. Para manter a URL
+          # https://joao-pedro-gms.github.io/BrainOutApp/prototipos/wireframes/
+          # colocamos os arquivos em BrainOutApp/prototipos/wireframes/
+          mkdir -p dist-for-pages/BrainOutApp/prototipos/wireframes
+          cp -r prototipos/wireframes/. dist-for-pages/BrainOutApp/prototipos/wireframes/
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: prototipos/web/dist
+          path: dist-for-pages
 
-  deploy:
-    needs: build
+  deploy-pages:
+    needs: deploy
     runs-on: ubuntu-latest
     environment:
       name: github-pages
