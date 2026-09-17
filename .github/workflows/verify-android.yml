@@ -86,6 +86,7 @@ jobs:
 
       - name: Detectar Gradle wrapper
         id: gradle
+        working-directory: android
         run: |
           if [ -x ./gradlew ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
