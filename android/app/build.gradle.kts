@@ -96,6 +96,11 @@ dependencies {
     // Network — OkHttp já configurado em AppModule; Retrofit virá nos ciclos seguintes
     implementation(libs.okhttp)
 
+    // Room — persistência local (issue #8 CRUD Projetos)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
     // Testes
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

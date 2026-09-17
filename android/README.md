@@ -4,8 +4,9 @@ Aplicativo Android nativo do **BrainOutApp** — gestão de projetos e tarefas,
 offline-first. Este módulo contém a estrutura base criada na **issue #6**
 (esqueleto do app em camadas com navegação entre as 6 telas do protótipo).
 
-> Stack: Kotlin 1.9.24 + Jetpack Compose Material 3 + Hilt (DI) + Compose
-> Navigation. Room/Retrofit chegam nos ciclos 2-3.
+|> Stack: Kotlin 1.9.24 + Jetpack Compose Material 3 + Hilt (DI) + Compose
+|> Navigation + **Room 2.6.1** (persistência local) + KSP. Retrofit continua
+|> fora do plano (app 100% offline, ADR-0005).
 
 ---
 
@@ -17,7 +18,7 @@ android/
 ├── settings.gradle.kts            # inclui :app
 ├── gradle.properties              # JVM args, AndroidX, configuration cache
 ├── gradle/
-│   ├── libs.versions.toml         # version catalog (Compose BOM, Hilt, etc.)
+│   ├── libs.versions.toml         # version catalog (Compose BOM, Hilt, Room, etc.)
 │   └── wrapper/
 │       ├── gradle-wrapper.jar
 │       └── gradle-wrapper.properties  # Gradle 8.7
@@ -25,7 +26,7 @@ android/
 ├── .editorconfig                  # 4 spaces, LF, max 120 cols (ktlint-friendly)
 ├── local.properties.example       # caminho do SDK + URL do backend
 └── app/
-    ├── build.gradle.kts           # módulo :app (Compose + Hilt + KSP)
+    ├── build.gradle.kts           # módulo :app (Compose + Hilt + KSP + Room)
     ├── proguard-rules.pro
     └── src/
         ├── main/
@@ -38,18 +39,18 @@ android/
         │       │   ├── BrainOutApp.kt      # composable raiz
         │       │   ├── theme/              # Color.kt, Type.kt, Theme.kt
         │       │   ├── navigation/         # Destinations.kt, BrainOutAppNavHost.kt
-        │       │   └── screens/            # 6 telas stub (login/projetos/tarefas/
-        │       │                           #   dashboard/criacao/detalhes)
-        │       ├── viewmodel/              # .gitkeep — ciclo 2+
-        │       ├── domain/                 # .gitkeep — ciclo 2+
-        │       │   ├── model/
-        │       │   └── usecase/
-        │       ├── data/                   # .gitkeep — ciclo 2+
-        │       │   ├── local/              # Room
-        │       │   ├── remote/             # Retrofit
-        │       │   └── repository/
+        │       │   └── screens/            # 6 telas (projetos/criacao/detalhes são reais, ciclo 2 #8)
+        │       ├── viewmodel/              # @HiltViewModel — ProjetoList/Detail/Form
+        │       ├── domain/                 # puro (R12): model, repository, usecase
+        │       │   ├── model/              # Projeto + StatusProjeto + mappers entity↔domain
+        │       │   ├── repository/         # interface ProjetoRepository
+        │       │   └── usecase/            # Criar/Editar/Listar/Excluir Projeto
+        │       ├── data/                   # local (Room) + repository (impl)
+        │       │   ├── local/              # entity/ProjetoEntity, dao/ProjetoDao, db/AppDatabase
+        │       │   ├── remote/             # reservado (vazio, ADR-0005)
+        │       │   └── repository/         # ProjetoRepositoryImpl
         │       └── di/
-        │           └── AppModule.kt        # @InstallIn(SingletonComponent::class)
+        │           └── AppModule.kt        # @InstallIn(SingletonComponent::class) — Room + Hilt
         └── test/
             └── java/com/joaopedrogms/brainoutapp/
                 └── AppSmokeTest.kt
@@ -82,6 +83,38 @@ argumento de navegação (`NavType.StringType`).
 > **Regra de ouro (R12):** nenhuma lógica de negócio em Composable. As telas
 > do ciclo 1 são puramente declarativas (Scaffold + Text + Button) e disparam
 > navegação via callbacks.
+
+## 🔁 O que entrou no ciclo 2 (issue #8 — CRUD Projetos)
+
+- **Room 2.6.1** integrado via KSP (`androidx.room:room-runtime`, `room-ktx`,
+  `room-compiler`). Banco local `brainoutapp.db` (SQLite) com a tabela `projetos`
+  (PK UUID, soft delete, timestamps UTC). `fallbackToDestructiveMigration` é
+  usado no builder para o ciclo de dev; ciclo 3+ adicionará migrations reais.
+- **Camada `data/local/`** completa: `entity/ProjetoEntity.kt`,
+  `dao/ProjetoDao.kt` (Flow + suspend), `db/AppDatabase.kt`,
+  `db/Converters.kt`, helper `UuidV7` (com fallback `UUID.randomUUID()` —
+  pendência documentada em `RESULTADO.md`).
+- **Camada `domain/`** pura (R12): `Projeto` + `StatusProjeto` + mappers
+  entity↔domain, interface `ProjetoRepository`, e 4 use cases
+  (criar/editar/listar/excluir).
+- **`data/repository/ProjetoRepositoryImpl.kt`** bridge Room → domain.
+- **`viewmodel/`** com 3 `@HiltViewModel`: `ProjetoListViewModel`,
+  `ProjetoDetailViewModel`, `ProjetoFormViewModel` (com validações de nome ≤100,
+  descrição ≤500, prazo ≥ hoje).
+- **DI** em `AppModule.kt`: providers para `AppDatabase` e `ProjetoDao`;
+  `RepositoryModule` (módulo `@Binds` separado) pluga `ProjetoRepositoryImpl`
+  na interface.
+- **Telas reais** (`ui/screens/{projetos,criacao,detalhes}`):
+  - `ProjetosScreen`: `LazyColumn` de `Card`, FAB `+` para criar, **empty state**
+    explícito com ícone `Folder` e CTA, loading e erro.
+  - `CriacaoScreen`: form completo com `OutlinedTextField` (validações inline
+    + contador), `DatePickerDialog` para prazo, botões Salvar/Cancelar.
+    Reaproveitado para criar e editar (`projetoId` opcional via `SavedStateHandle`).
+  - `DetalhesScreen`: read-only com botões Editar (placeholder, ver
+    pendências) e Excluir (com `AlertDialog` de confirmação e soft delete).
+- **`ui/navigation/Destinations.kt`** ganhou a rota `criacao/{projetoId}` (helper
+  canônico); o registro no `BrainOutAppNavHost.kt` é responsabilidade da lane
+  de navegação.
 
 ## 🚀 Como rodar
 

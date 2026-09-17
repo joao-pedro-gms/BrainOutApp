@@ -21,6 +21,21 @@ object Destinations {
     const val DETALHES_PROJETO_ROUTE = "detalhes/{projetoId}"
     const val TAREFAS = "tarefas"
     const val CRIACAO = "criacao"
+
+    /**
+     * Variante da rota `criacao` em **modo edição**: recebe o `projetoId`
+     * para que o `ProjetoFormViewModel` carregue os dados do projeto
+     * e pré-popule o formulário.
+     *
+     * O registro do `composable(...)` correspondente no
+     * `BrainOutAppNavHost.kt` é responsabilidade da lane de onboarding
+     * (que já mexe no startDestination). Esta lane (#8) só adiciona o
+     * helper canônico aqui para evitar divergência.
+     */
+    const val CRIACAO_PROJETO_ROUTE = "criacao/{projetoId}"
+    const val CRIACAO_PROJETO_ARG = "projetoId"
+    fun criacaoProjeto(projetoId: String) = "criacao/$projetoId"
+
     const val DASHBOARD = "dashboard"
 
     // Helpers para navegação tipada com argumentos.

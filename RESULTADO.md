@@ -521,107 +521,326 @@ uv run uvicorn app.main:app --reload             # sobe o servidor (porta 8000)
 
 ---
 
-# PARTE C — Lane onboarding (issue #7 reciclada — ADR-0006)
+# PARTE C — Lane #8 (issue #8, CRUD completo de Projetos — Android)
 
-**Branch:** `feature/onboarding`
-**Worktree:** `/home/joaopgms/Projetos/wt-onboarding`
+**Branch:** `feature/crud-projetos`
+**Worktree:** `/home/joaopgms/Projetos/wt-crud-projetos`
 **Tracking:** `origin/master`
-**Origem:** board `/home/joaopgms/Projetos/BrainOutApp/docs/BOARD.md` — lane onboarding (ADR-0006).
+**Issue:** [#8 — CRUD completo de Projetos](https://github.com/joao-pedro-gms/BrainOutApp/issues/8)
 
-> Tela de seleção de perfil local (Gerente / Colaborador) com DataStore Preferences;
-> NavHost passa a decidir start destination (`onboarding` se perfil indefinido,
-> `projetos` se já definido).
+> Entrega de uma única lane despachada em paralelo a partir do orchestrator
+> Hermes em 2026-09-17. Limites respeitados (ver "Anti-colisão" abaixo).
 
-## 1. Arquivos criados
+---
 
-| Path | Conteúdo |
-|------|----------|
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/preferences/PerfilPreferences.kt` | `enum Perfil { GERENTE, COLABORADOR }`, `interface PerfilPreferencesRepository` (`getPerfil`/`setPerfil`), impl `@Inject @Singleton` via `Context.preferencesDataStore(name = "brainoutapp_prefs")`, chave `perfil_usuario`. |
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/di/PreferencesModule.kt` | `@Module @InstallIn(SingletonComponent::class) abstract class` com `@Binds @Singleton` `PerfilPreferencesRepositoryImpl → PerfilPreferencesRepository`. |
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingViewModel.kt` | `@HiltViewModel`, expõe `saving: StateFlow<Boolean>` e `error: StateFlow<String?>`, `fun setPerfil(p, onSaved)` idempotente em `viewModelScope`. |
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt` | Composable Material 3: `Scaffold` + `TopAppBar`, headline + 2 CTAs (`Button`/`OutlinedButton` ≥ 56dp) usando tokens semânticos; `Preview`. |
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/RootViewModel.kt` | `sealed interface RootStartState { Loading; NeedsOnboarding; Authenticated }`; `@HiltViewModel` lê `PerfilPreferencesRepository.getPerfil()` e expõe `state: StateFlow<RootStartState>`. |
+## 1. Arquivos criados / modificados
 
-## 2. Arquivos modificados
+> Caminhos absolutos a partir do worktree `/home/joaopgms/Projetos/wt-crud-projetos`.
 
-| Path | Mudança |
-|------|---------|
-| `android/gradle/libs.versions.toml` | +`datastore-preferences = "1.1.1"`; +`androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore-preferences" }`; +`androidx-lifecycle-runtime-compose` (suporte a `collectAsStateWithLifecycle`). |
-| `android/app/build.gradle.kts` | +`implementation(libs.androidx.datastore.preferences)`; +`implementation(libs.androidx.lifecycle.runtime.compose)`. |
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt` | +`const val ONBOARDING = "onboarding"`. |
-| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt` | Reescrito: consome `RootViewModel` (Hilt), decide start (`ONBOARDING` ou `PROJETOS`), helper `RootLoadingScreen` enquanto `Loading`; rota `ONBOARDING` adicionada com `popUpTo(ONBOARDING) { inclusive = true }` + `rootViewModel.refresh()`. Rotas existentes (`LOGIN`, `PROJETOS`, `DETALHES`, `TAREFAS`, `CRIACAO`, `DASHBOARD`) preservadas. |
+### Build / Gradle (modificados)
 
-## 3. Comandos de verificação (saída literal)
+| Path | Tipo |
+|------|------|
+| `android/gradle/libs.versions.toml` | **modificado** (Room 2.6.1 + 3 libs) |
+| `android/app/build.gradle.kts` | **modificado** (deps Room via KSP) |
+
+### Camada `data/local/` (criados)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/entity/ProjetoEntity.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/dao/ProjetoDao.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/db/AppDatabase.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/db/Converters.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/UuidV7.kt` | criado |
+
+### Camada `domain/` (criados)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/model/Projeto.kt` | criado (`Projeto` + `StatusProjeto` + mappers entity↔domain) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/repository/ProjetoRepository.kt` | criado (interface) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/CriarProjetoUseCase.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/EditarProjetoUseCase.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/ListarProjetosUseCase.kt` | criado |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/ExcluirProjetoUseCase.kt` | criado |
+
+### Camada `data/repository/` (criado)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/repository/ProjetoRepositoryImpl.kt` | criado |
+
+### Camada `viewmodel/` (criados)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/UiState.kt` | criado (`sealed interface UiState`) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoListViewModel.kt` | criado (`@HiltViewModel`) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoDetailViewModel.kt` | criado (`@HiltViewModel`) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoFormViewModel.kt` | criado (`@HiltViewModel`) |
+
+### DI (modificado)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/di/AppModule.kt` | **modificado** (`provideAppDatabase` + `provideProjetoDao` + novo `RepositoryModule` com `@Binds`) |
+
+### Telas (modificadas — substituíram os stubs)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/projetos/ProjetosScreen.kt` | **modificado** (LazyColumn + FAB + empty state) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/criacao/CriacaoScreen.kt` | **modificado** (form real com DatePicker + validações inline) |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/detalhes/DetalhesScreen.kt` | **modificado** (read-only + AlertDialog de exclusão) |
+
+### Navegação (modificada — apenas `Destinations.kt`)
+
+| Path | Tipo |
+|------|------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt` | **modificado** (helper canônico `criacao/{projetoId}`) |
+
+> `BrainOutAppNavHost.kt` **não** foi tocado (anti-colisão — outra lane cuida
+> do startDestination e do registro da nova rota `criacao/{projetoId}`).
+
+### Documentação (modificada)
+
+| Path | Tipo |
+|------|------|
+| `android/README.md` | **modificado** (seção "O que entrou no ciclo 2") |
+
+---
+
+## 2. Saída literal dos comandos de verificação
+
+### 2.1. Contagem de arquivos `.kt` (`find … -name '*.kt' | sort`)
+
+**Comando:**
+```
+find /home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java -name '*.kt' | sort
+```
+
+**Saída (31 arquivos, ≥ 20 exigido ✅):**
 
 ```
-$ ls android/app/src/main/java/com/joaopedrogms/brainoutapp/data/preferences/
-PerfilPreferences.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/BrainOutApp.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/MainActivity.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/UuidV7.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/dao/ProjetoDao.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/db/AppDatabase.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/db/Converters.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/entity/ProjetoEntity.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/repository/ProjetoRepositoryImpl.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/di/AppModule.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/model/Projeto.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/repository/ProjetoRepository.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/CriarProjetoUseCase.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/EditarProjetoUseCase.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/ExcluirProjetoUseCase.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/ListarProjetosUseCase.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/BrainOutApp.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/criacao/CriacaoScreen.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/dashboard/DashboardScreen.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/detalhes/DetalhesScreen.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/login/LoginScreen.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/projetos/ProjetosScreen.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/tarefas/TarefasScreen.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/Color.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/Theme.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/theme/Type.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoDetailViewModel.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoFormViewModel.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoListViewModel.kt
+/home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/UiState.kt
+```
 
-$ grep -n 'datastore-preferences' android/gradle/libs.versions.toml
-15:datastore-preferences = "1.1.1"
-56:androidx-datastore-preferences = { group = "androidx.datastore",           name = "datastore-preferences",                version.ref = "datastore-preferences" }
+### 2.2. Room no `libs.versions.toml`
 
-$ grep -n 'ONBOARDING' android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt
-18:    const val ONBOARDING = "onboarding"
+**Comando:**
+```
+grep -n 'room-runtime\|room-ktx\|room-compiler' \
+  /home/joaopgms/Projetos/wt-crud-projetos/android/gradle/libs.versions.toml
+```
 
-$ grep -rn 'OnboardingScreen' android/app/src/main/java/com/joaopedrogms/brainoutapp/
-android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt:27:import com.joaopedrogms.brainoutapp.ui.screens.onboarding.OnboardingScreen
-android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt:74:                    OnboardingScreen(
-android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt:42:fun OnboardingScreen(
-android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt:121:private fun OnboardingScreenPreview() {
-android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt:125:        OnboardingScreen()
+**Saída (3 entradas, conforme exigido ✅):**
 
-$ git status --short
+```
+55:androidx-room-runtime          = { group = "androidx.room",                name = "room-runtime",                          version.ref = "room" }
+56:androidx-room-ktx              = { group = "androidx.room",                name = "room-ktx",                              version.ref = "room" }
+57:androidx-room-compiler         = { group = "androidx.room",                name = "room-compiler",                         version.ref = "room" }
+```
+
+### 2.3. `@HiltViewModel` / `@AndroidEntryPoint` / `@Inject` nos ViewModels
+
+**Comando:**
+```
+grep -rn '@HiltViewModel\|@AndroidEntryPoint\|@Inject' \
+  /home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/
+```
+
+**Saída ✅:**
+
+```
+…/viewmodel/ProjetoListViewModel.kt:28:@HiltViewModel
+…/viewmodel/ProjetoListViewModel.kt:29:class ProjetoListViewModel @Inject constructor(
+…/viewmodel/ProjetoFormViewModel.kt:45:@HiltViewModel
+…/viewmodel/ProjetoFormViewModel.kt:46:class ProjetoFormViewModel @Inject constructor(
+…/viewmodel/ProjetoDetailViewModel.kt:33:@HiltViewModel
+…/viewmodel/ProjetoDetailViewModel.kt:34:class ProjetoDetailViewModel @Inject constructor(
+```
+
+> `@AndroidEntryPoint` é apenas para `Activity`/`Fragment`/`Service` — não se
+> aplica a ViewModels (que usam `@HiltViewModel`). Os 3 ViewModels da lane
+> estão anotados.
+
+### 2.4. Anotações Room em `data/`
+
+**Comando:**
+```
+grep -rn '@Entity\|@Dao\|@Database' \
+  /home/joaopgms/Projetos/wt-crud-projetos/android/app/src/main/java/com/joaopedrogms/brainoutapp/data/
+```
+
+**Saída ✅:**
+
+```
+…/data/local/entity/ProjetoEntity.kt:32:@Entity(tableName = "projetos")
+…/data/local/dao/ProjetoDao.kt:23:@Dao
+…/data/local/db/AppDatabase.kt:23:@Database(
+```
+
+### 2.5. Status do git (verificação de anti-colisão)
+
+**Comando:** `git -C /home/joaopgms/Projetos/wt-crud-projetos status --short`
+
+**Saída (apenas paths dentro do escopo desta lane):**
+
+```
+ M android/README.md
  M android/app/build.gradle.kts
- M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt
+ M android/app/src/main/java/com/joaopedrogms/brainoutapp/di/AppModule.kt
  M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt
+ M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/criacao/CriacaoScreen.kt
+ M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/detalhes/DetalhesScreen.kt
+ M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/projetos/ProjetosScreen.kt
  M android/gradle/libs.versions.toml
-?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/preferences/
-?? android/app/src/main/java/com/joaopedrogms/brainoutapp/di/PreferencesModule.kt
-?? android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/
-?? android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/RootViewModel.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/UuidV7.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/dao/
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/db/
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/local/entity/
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/repository/ProjetoRepositoryImpl.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/model/Projeto.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/repository/
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/CriarProjetoUseCase.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/EditarProjetoUseCase.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/ExcluirProjetoUseCase.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/domain/usecase/ListarProjetosUseCase.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoDetailViewModel.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoFormViewModel.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/ProjetoListViewModel.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/UiState.kt
 ```
 
-## 4. Critérios de aceite
+> **Sem tocar em:**
+> - `ui/navigation/BrainOutAppNavHost.kt` (outra lane de onboarding/navegação cuida)
+> - `ui/screens/{login,tarefas,dashboard}/` (outras lanes)
+> - `ui/theme/` (design system já estável)
+> - `data/preferences/`, `data/remote/`, `data/security/` (outras lanes)
 
-| # | Critério | Status |
-|---|----------|--------|
-| 1 | `ls data/preferences/` mostra `PerfilPreferences.kt` | ✅ |
-| 2 | `grep 'datastore-preferences' libs.versions.toml` retorna entrada (versão + alias) | ✅ |
-| 3 | `grep 'ONBOARDING' Destinations.kt` aparece (constante na rota) | ✅ |
-| 4 | `grep -rn 'OnboardingScreen'` retorna ≥ 2 matches (declaração + uso no NavHost) | ✅ (5 matches) |
-| 5 | `PerfilPreferences.kt` contém enum `Perfil { GERENTE, COLABORADOR }`, interface e impl com `@Inject constructor(@ApplicationContext)` | ✅ |
-| 6 | `PreferencesModule.kt` faz `@Binds @Singleton` da interface → impl | ✅ |
-| 7 | `OnboardingViewModel` é `@HiltViewModel` com `setPerfil` em `viewModelScope` | ✅ |
-| 8 | `OnboardingScreen` usa tokens semânticos (`MaterialTheme.colorScheme.primary/secondary/onBackground/onSurfaceVariant/error`) | ✅ |
-| 9 | `BrainOutAppNavHost` decide `startDestination` dinamicamente via `RootViewModel` | ✅ |
-| 10 | `RootViewModel` decide start com base em `PerfilPreferencesRepository.getPerfil()` | ✅ |
-| 11 | Sem `print()` — usa `android.util.Log` | ✅ |
-| 12 | Compatível com Compose BOM 2024.08 / Material 3 / Kotlin 1.9.24 / Hilt 2.51.1 / Navigation 2.7.7 | ✅ |
-| 13 | Sem `./gradlew` rodado (sem SDK Android local) | ✅ |
-| 14 | Nada commitado / pushed / PR aberto | ✅ |
-| 15 | Anti-colisão: nenhuma alteração fora do escopo permitido | ✅ |
+---
 
-## 5. Pendências / blockers
+## 3. Critérios de aceite (issue #8)
 
-- **Sem bloqueadores.**
-- Senha local (AppLock via `EncryptedSharedPreferences`) está fora do escopo desta lane — `login` permanece no grafo como stub; reavaliação em ciclo futuro conforme ADR-0006.
-- Testes unitários (`PerfilPreferencesTest`, `OnboardingViewModelTest`) também fora do escopo desta lane; ADR-0006 lista-os como item separado.
-- Não rodei `./gradlew` por falta de SDK Android local — verificação é estática.
+| # | Critério | Status | Evidência |
+|---|----------|:-----:|----------|
+| 1 | Room adicionado ao `libs.versions.toml` + `app/build.gradle.kts` via KSP | ✅ | 3 entradas no `libs.versions.toml` (linhas 55-57); bloco `ksp(libs.androidx.room.compiler)` no `app/build.gradle.kts` |
+| 2 | `data/local/` com Entity, DAO, AppDatabase, Converters | ✅ | 5 arquivos criados (`entity/ProjetoEntity.kt`, `dao/ProjetoDao.kt`, `db/AppDatabase.kt`, `db/Converters.kt`, `UuidV7.kt`) |
+| 3 | `domain/` puro: model + interface repository + 4 use cases | ✅ | `domain/model/Projeto.kt`, `domain/repository/ProjetoRepository.kt`, 4 use cases em `domain/usecase/` |
+| 4 | `data/repository/ProjetoRepositoryImpl.kt` bridge Room→domain | ✅ | Arquivo criado com `.map { it.toDomain() }` no `getAll()`/`getById()` |
+| 5 | DI: AppDatabase + DAO + binding repository | ✅ | `AppModule.kt` com `provideAppDatabase`/`provideProjetoDao`; `RepositoryModule` com `@Binds` |
+| 6 | 3 `@HiltViewModel` (List, Detail, Form) | ✅ | Verificação 2.3 acima |
+| 7 | Tela Projetos: lista reativa + FAB + empty state | ✅ | `ProjetosScreen.kt` com `LazyColumn`/`Card`/`FAB`, `EmptyStateProjetos` dedicado |
+| 8 | Tela Criação: form completo com DatePicker e validações | ✅ | `CriacaoScreen.kt` com `OutlinedTextField` + `DatePickerDialog` + suporte a editar via `projetoId` |
+| 9 | Tela Detalhes: read-only + Editar/Excluir | ✅ | `DetalhesScreen.kt` com read-only, botão Editar (placeholder — ver pendências), `AlertDialog` de exclusão |
+| 10 | Validações: nome ≤100, descrição ≤500, prazo ≥ hoje | ✅ | `ProjetoFormViewModel.validarNome/Descricao/Prazo`; contadores inline em `CriacaoScreen` |
+| 11 | Status: ABERTO por padrão ao criar | ✅ | `CriarProjetoUseCase.invoke` seta `StatusProjeto.ABERTO` |
+| 12 | UUID v7 documentado como pendência | ✅ | `UuidV7.kt` com fallback `UUID.randomUUID()` + Log de aviso único; comentário em `ProjetoEntity.kt` e neste `RESULTADO.md` |
+| 13 | Sem `print()`, sem rede, sem dependência de SDK local | ✅ | Apenas `android.util.Log` em `UuidV7.kt` e `ProjetoRepositoryImpl.kt`; nenhum `print()` |
+| 14 | Anti-colisão: nenhuma alteração fora do escopo desta lane | ✅ | Verificação 2.5 acima — apenas arquivos do escopo foram modificados |
+| 15 | Não rodei `./gradlew` (sem SDK Android) | ✅ | Nenhum comando Gradle executado; checagens foram estáticas (grep, find, contagem de arquivos) |
 
-## 6. Anti-colisão — diff resumido desta lane
+**Resumo: 15 / 15 ✅**
 
-```
-android/app/build.gradle.kts                                            | +5
-android/app/src/main/java/com/joaopedrogms/brainoutapp/
-  data/preferences/PerfilPreferences.kt                                 | +criado
-  di/PreferencesModule.kt                                               | +criado
-  ui/screens/onboarding/OnboardingScreen.kt                             | +criado
-  ui/screens/onboarding/OnboardingViewModel.kt                          | +criado
-  ui/navigation/BrainOutAppNavHost.kt                                   | reescrito (start dinâmico + rota ONBOARDING)
-  ui/navigation/Destinations.kt                                         | +1 linha (const val ONBOARDING)
-  viewmodel/RootViewModel.kt                                            | +criado
-android/gradle/libs.versions.toml                                       | +4 linhas (versão + alias datastore + lifecycle-runtime-compose)
-```
+---
 
-Nenhuma alteração em: `projetos/`, `tarefas/`, `dashboard/`, `criacao/`, `detalhes/`, `login/`, `theme/`, `BrainOutApp.kt`, `MainActivity.kt`, `AppModule.kt`, `AppSmokeTest.kt`, ou em qualquer outro worktree (`wt-crud-projetos`, raiz).
+## 4. Pendências / blockers
+
+1. **UUID v7 fallback (`UUID.randomUUID()`).** A biblioteca `uuid-v7` não
+   está no catálogo desta lane. O helper `UuidV7.novo()` delega para
+   `UUID.randomUUID()` (v4) e emite um aviso único no Logcat. Quando a lib
+   entrar em outra lane, basta substituir o corpo de `UuidV7.novo()` — nenhum
+   caller precisa mudar. Documentado em `UuidV7.kt`, `ProjetoEntity.kt` e
+   aqui.
+
+2. **RN01 / RN02 / RN03 — fora do escopo desta lane.** As regras de negócio
+   (`docs/regras-negocio.md`) serão injetadas em use cases no ciclo 3. Esta
+   lane (#8) implementou apenas as validações de input declaradas na issue
+   (nome ≤100, descrição ≤500, prazo ≥ hoje). Os use cases
+   (`Criar/Editar/Listar/Excluir Projeto`) já estão prontos para receber os
+   checks sem refatoração.
+
+3. **Navegação "Editar projeto" partir de `DetalhesScreen`.** O botão
+   "Editar" da TopBar e do corpo da `DetalhesScreen` está **desabilitado**
+   até que a lane de navegação (onboarding/nav) registre a rota
+   `criacao/{projetoId}` no `BrainOutAppNavHost.kt` e passe o callback
+   `onEditar = { id -> navController.navigate(Destinations.criacaoProjeto(id)) }`.
+   O helper canônico `Destinations.criacaoProjeto(id)` já está disponível
+   — é só plugar no NavHost.
+
+4. **Testes unitários do Repository/UseCases.** Cobertura de testes
+   (JUnit + MockK + Turbine) não está nesta lane — fica para o ciclo 3
+   junto com as RN01-03.
+
+5. **`fallbackToDestructiveMigration()`.** O builder do Room está com
+   `fallbackToDestructiveMigration()` para simplificar dev. Em release (ciclo
+   3+) removeremos e adicionaremos migrations explícitas via
+   `Room.databaseBuilder().addMigrations(...)` quando `TarefaEntity` entrar
+   no schema.
+
+6. **Enum `EM_ANDAMENTO` do ER.** O ER menciona
+   `planejado|em_andamento|concluido|cancelado`. Esta lane implementou
+   `ABERTO | CONCLUIDO | CANCELADO`. O valor `EM_ANDAMENTO` virá quando as
+   RN01-03 forem modeladas (ciclo 3). O mapper `StatusProjeto.fromStorage`
+   já tolera valores desconhecidos (cai em `ABERTO`).
+
+7. **DI: `provideAppDatabase` não usa `@Singleton` no `AppDatabase`
+   binding do DAO.** O DAO é fornecido via `@Provides` sem escopo (cria
+   nova instância por chamada ao getter), mas o `AppDatabase` é singleton
+   e o DAO vem do mesmo database — então sempre a mesma instância efetiva.
+   Não há bug; é apenas uma micro-otimização possível para o ciclo 3.
+
+---
+
+## 5. Anti-colisão
+
+A lane **não modificou** (verificação por `git status --short`):
+- `ui/navigation/BrainOutAppNavHost.kt`
+- `ui/screens/{login,tarefas,dashboard}/`
+- `ui/theme/`
+- `data/preferences/`, `data/remote/`, `data/security/`
+- `MainActivity.kt`, `BrainOutApp.kt`, `ui/BrainOutApp.kt` (raiz)
+
+**Modificou apenas dentro do escopo declarado** (ver seção 1).
+
+A lane **não executou** `git commit`, `git push` ou `gh pr create` —
+ficou no papel de entrega de código (commits consolidados pelo orchestrator).
+
+---
+
+<div align="center">
+
+<sub>🧠 BrainOutApp · Lane CRUD Projetos · issue #8 · ciclo 2 (offline-first)</sub>
+
+</div>
