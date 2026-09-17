@@ -16,6 +16,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -42,6 +43,15 @@ object AppModule {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
+
+    /**
+     * Clock injetado em todo o app (ex.: DashboardViewModel).
+     * Default `systemDefaultZone()`; em testes pode ser sobrescrito via
+     * `@TestInstallIn` substituindo o módulo.
+     */
+    @Provides
+    @Singleton
+    fun provideClock(): Clock = Clock.systemDefaultZone()
 
     /**
      * Instância singleton do banco Room local.
