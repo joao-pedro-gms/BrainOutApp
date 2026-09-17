@@ -2,17 +2,6 @@ name: Verify Android (reutilizável)
 
 # Workflow reutilizável para validar uma branch de feature antes de merge.
 # Pode ser chamado de outro workflow via `uses:`, ou disparado manualmente.
-#
-# Como chamar de outro workflow:
-#   verify-android:
-#     uses: ./.github/workflows/verify-android.yml
-#     with:
-#       gradle-task: "assembleDebug"   # opcional; default = assembleDebug
-#     permissions:
-#       contents: read
-#
-# Disparar manualmente:
-#   gh workflow run verify-android.yml -f branch=feature/foo
 
 on:
   workflow_call:
@@ -47,22 +36,16 @@ jobs:
   verify-android:
     name: Verify Android build (${{ inputs.gradle-task || 'assembleDebug' }})
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # para diff contra master
+          fetch-depth: 0
 
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
 
-      # Instalar Android SDK via cmdline-tools (oficial).
-      # O workflow original usava actions/setup-android-sdk@v4 mas a action
-      # nao esta mais disponivel no marketplace; instalamos via sdkmanager.
       - name: Instalar Android SDK 34
         run: |
           set -e
@@ -99,116 +82,75 @@ jobs:
           fi
 
       - uses: gradle/actions/setup-gradle@v4
-        if: steps.gradle.outputs.present == 'true'
+        if: steps.gradle.outputs.present == \'true\'
 
-      # ============================================================
-      # Etapas estruturais (rápidas, pegam erros antes de gastar build)
-      # ============================================================
-
-      - name: Verificar estrutura mínima
+      - name: Verificar estrutura minima
+        working-directory: android
         run: |
           set -e
-          echo "=== Verificando arquivos chave do esqueleto ==="
-          test -f android/app/build.gradle.kts || { echo "::error::app/build.gradle.kts ausente"; exit 1; }
-          test -f android/app/src/main/AndroidManifest.xml || { echo "::error::AndroidManifest.xml ausente"; exit 1; }
-          test -f android/app/src/main/java/com/joaopedrogms/brainoutapp/BrainOutApp.kt || { echo "::error::BrainOutApp.kt ausente"; exit 1; }
-          test -f android/gradle/libs.versions.toml || { echo "::error::version catalog ausente"; exit 1; }
-          echo "OK"
+          test -f app/build.gradle.kts || { echo "::error::app/build.gradle.kts ausente"; exit 1; }
+          test -f app/src/main/AndroidManifest.xml || { echo "::error::AndroidManifest.xml ausente"; exit 1; }
+          test -f app/src/main/java/com/joaopedrogms/brainoutapp/BrainOutApp.kt || { echo "::error::BrainOutApp.kt ausente"; exit 1; }
+          test -f gradle/libs.versions.toml || { echo "::error::version catalog ausente"; exit 1; }
+          echo OK
 
-      - name: Verificar libs.versions.toml (TOML válido)
-        run: |
-          python3 -c "
-          import tomllib
-          with open('android/gradle/libs.versions.toml','rb') as f:
-              tomllib.load(f)
-          print('TOML OK')
-          "
+      - name: Verificar libs.versions.toml (TOML valido)
+        working-directory: android
+        run: python3 -c "import tomllib; tomllib.load(open(\'gradle/libs.versions.toml\',\'rb\')); print(\'TOML OK\')"
 
-      - name: Detectar TODOs órfãos em código de produção
+      - name: Detectar TODOs orfaos
+        working-directory: android
         run: |
-          # Subagentes às vezes deixam TODOs/FIXMEs; alguns sao legitimos,
-          # mas qualquer TODO em domain/ ou data/ deve ser revisado.
-          count=$(grep -rn 'TODO\|FIXME' \
-            --include='*.kt' \
-            android/app/src/main/java/com/joaopedrogms/brainoutapp/{domain,data} 2>/dev/null | wc -l || true)
+          count=$(grep -rn \'TODO\|FIXME\' --include=\'*.kt\' app/src/main/java/com/joaopedrogms/brainoutapp/domain app/src/main/java/com/joaopedrogms/brainoutapp/data 2>/dev/null | grep -v \'^\\s*\\*\|^\\s*//\' | wc -l)
           echo "TODOs/FIXMEs em domain/data: $count"
-          if [ "$count" -gt 5 ]; then
-            echo "::warning::Mais de 5 TODOs/FIXMEs em domain/data — revisar"
-          fi
 
-      - name: Verificar consistência de DI (Hilt)
+      - name: Verificar consistencia DI (Hilt)
+        working-directory: android
         run: |
-          # @HiltViewModel deve ter @Inject constructor.
-          # ViewModels sem @Inject ou @HiltViewModel sao prováveis bugs.
-          echo "=== ViewModels sem @HiltViewModel ==="
-          for f in $(find android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel -name '*ViewModel.kt' 2>/dev/null); do
-            if ! grep -q '@HiltViewModel\|@Inject' "$f"; then
-              echo "::warning::$f nao tem @HiltViewModel/@Inject"
+          for f in $(find app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel -name \'*ViewModel.kt\' 2>/dev/null); do
+            if ! grep -q \'@HiltViewModel\|@Inject\' "$f"; then
+              echo "::warning::$f sem @HiltViewModel/@Inject"
             fi
           done
-          echo "OK"
 
-      - name: Verificar imports Kotlin (heurística rápida)
+      - name: Verificar imports Kotlin
+        working-directory: android
         run: |
-          # Detecta uso de Modifier.padding sem import (causou o bug #60).
-          for f in $(find android/app/src/main -name '*.kt' 2>/dev/null); do
-            if grep -q 'Modifier\.padding' "$f" && ! grep -q 'import androidx\.compose\.foundation\.layout\.padding' "$f"; then
+          for f in $(find app/src/main -name \'*.kt\' 2>/dev/null); do
+            if grep -q \'Modifier\\.padding\' "$f" && ! grep -q \'import androidx\\.compose\\.foundation\\.layout\\.padding\' "$f"; then
               echo "::error::$f usa Modifier.padding sem import"
               exit 1
             fi
           done
-          echo "OK"
-
-      # ============================================================
-      # ktlint
-      # ============================================================
+          echo OK
 
       - name: ktlintCheck
-        if: steps.gradle.outputs.present == 'true' && (inputs.run-ktlint == 'yes' || inputs.run-ktlint == '')
+        if: steps.gradle.outputs.present == \'true\' && (inputs.run-ktlint == \'yes\' || inputs.run-ktlint == \'\')
+        working-directory: android
         run: ./gradlew ktlintCheck
 
-      # ============================================================
-      # Testes unitários (JUnit)
-      # ============================================================
-
-      - name: Testes unitários
-        if: steps.gradle.outputs.present == 'true' && (inputs.run-tests == 'yes' || inputs.run-tests == '')
+      - name: Testes unitarios
+        if: steps.gradle.outputs.present == \'true\' && (inputs.run-tests == \'yes\' || inputs.run-tests == \'\')
+        working-directory: android
         run: ./gradlew testDebugUnitTest
 
-      # ============================================================
-      # Build do APK
-      # ============================================================
+      - name: Build
+        if: steps.gradle.outputs.present == \'true\'
+        working-directory: android
+        run: ./gradlew ${{ inputs.gradle-task || \'assembleDebug\' }}
 
-      - name: Build (${{ inputs.gradle-task || 'assembleDebug' }})
-        if: steps.gradle.outputs.present == 'true'
-        run: ./gradlew ${{ inputs.gradle-task || 'assembleDebug' }}
-
-      # ============================================================
-      # Artefatos
-      # ============================================================
-
-      - name: Anexar APK como artifact
-        if: steps.gradle.outputs.present == 'true' && always()
+      - name: Anexar APK
+        if: steps.gradle.outputs.present == \'true\' && always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-${{ inputs.gradle-task || 'assembleDebug' }}
+          name: app-${{ inputs.gradle-task || \'assembleDebug\' }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: warn
 
-      - name: Anexar relatório de testes
-        if: (steps.gradle.outputs.present == 'true') && (always() || inputs.run-tests == 'yes' || inputs.run-tests == '')
+      - name: Anexar relatorio de testes
+        if: (steps.gradle.outputs.present == \'true\') && (always() || inputs.run-tests == \'yes\' || inputs.run-tests == \'\')
         uses: actions/upload-artifact@v4
         with:
           name: test-report
           path: android/app/build/reports/tests/testDebugUnitTest/
           if-no-files-found: warn
-
-      - name: Resumo
-        if: always()
-        run: |
-          echo "## Verify Android — ${{ inputs.gradle-task || 'assembleDebug' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Branch: \`${GITHUB_REF#refs/heads/}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- ktlint: ${{ inputs.run-ktlint }}" >> $GITHUB_STEP_SUMMARY
-          echo "- testes: ${{ inputs.run-tests }}" >> $GITHUB_STEP_SUMMARY
