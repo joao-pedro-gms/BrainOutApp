@@ -25,15 +25,15 @@ jobs:
 
       - name: Copiar wireframes para pasta de publicacao
         run: |
-          # O Pages serve em /$repo/. Para manter a URL
+          # O Pages serve em /$repo/. Para a URL
           # https://joao-pedro-gms.github.io/BrainOutApp/prototipos/wireframes/
-          # colocamos os arquivos em BrainOutApp/prototipos/wireframes/
-          mkdir -p dist-for-pages/BrainOutApp/prototipos/wireframes
-          cp -r prototipos/wireframes/. dist-for-pages/BrainOutApp/prototipos/wireframes/
+          # colocamos os arquivos em prototipos/wireframes/ dentro do artifact.
+          mkdir -p dist-for-pages/prototipos/wireframes
+          cp -r prototipos/wireframes/. dist-for-pages/prototipos/wireframes/
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist-for-pages
+          path: dist-for-pages/prototipos/wireframes
 
   deploy-pages:
     needs: deploy
