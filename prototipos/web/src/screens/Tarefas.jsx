@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProjetos, useTarefas } from '../lib/store';
 import { StatusTarefaBadge, PrioridadeBadge } from '../components/Badges';
+import { Icon } from '../lib/icons.jsx';
 import { USUARIOS } from '../data/mock';
 import { formatarData, tarefaAtrasada } from '../lib/regras';
 
@@ -31,15 +32,21 @@ export default function Tarefas({ perfil }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900">Tarefas</h1>
           <p className="text-slate-600 text-sm">
-            {filtradas.length} de {tarefas.length} tarefa(s)
-            {!isGerente && ' · você só vê as tarefas atribuídas a você comoColaborador.'}
+            {filtradas.length} tarefa(s)
+            {!isGerente && ' · você só vê as tarefas atribuídas a você como Colaborador.'}
           </p>
         </div>
-        {isGerente && <Link to="/tarefas/nova" className="btn-primary">+ Nova tarefa</Link>}
+        {isGerente && (
+          <Link to="/tarefas/nova" className="btn-primary whitespace-nowrap shrink-0">
+            <Icon name="plus" size="sm" />
+            <span className="hidden sm:inline">Nova tarefa</span>
+            <span className="sm:hidden">Nova</span>
+          </Link>
+        )}
       </div>
 
       <div className="card p-4 mb-4 grid sm:grid-cols-5 gap-3">
@@ -78,7 +85,9 @@ export default function Tarefas({ perfil }) {
 
       {filtradas.length === 0 ? (
         <div className="card p-10 text-center text-slate-500">
-          <p className="text-5xl mb-3">🔍</p>
+          <div className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center">
+            <Icon name="searchX" size="xl" strokeWidth={1.5} />
+          </div>
           <p>Nenhuma tarefa bate com os filtros.</p>
         </div>
       ) : (
@@ -89,18 +98,31 @@ export default function Tarefas({ perfil }) {
             const atrasada = tarefaAtrasada(t);
             return (
               <li key={t.id} className="card p-4">
-                <div className="flex items-start justify-between gap-3 mb-1 flex-wrap">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Link to={`/tarefas/${t.id}/editar`} className="font-medium text-slate-900 hover:text-brand-700">{t.titulo}</Link>
                   <div className="flex gap-1 flex-wrap">
                     <StatusTarefaBadge status={t.status} />
                     <PrioridadeBadge prioridade={t.prioridade} />
-                    {atrasada && <span className="badge bg-red-100 text-red-700">⚠ Atrasada</span>}
+                    {atrasada && (
+                      <span className="badge bg-red-100 text-red-700 inline-flex items-center gap-1">
+                        <Icon name="alert" size="xs" /> Atrasada
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="text-xs text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
-                  <span>📁 {projeto?.nome ?? '—'}</span>
-                  <span>👤 {responsavel?.nome ?? '—'}</span>
-                  <span>📅 {formatarData(t.prazo)}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="folderOpen" size="xs" />
+                    {projeto?.nome ?? '—'}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="userSmall" size="xs" />
+                    {responsavel?.nome ?? '—'}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Icon name="calendar" size="xs" />
+                    {formatarData(t.prazo)}
+                  </span>
                 </div>
               </li>
             );
