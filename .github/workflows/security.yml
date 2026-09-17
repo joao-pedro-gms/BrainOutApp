@@ -30,16 +30,25 @@ jobs:
       - name: Rodar gitleaks
         run: gitleaks detect --source . --redact --no-banner
 
-  # Checagem de dependências do backend com pip-audit, quando existir
+  # Checagem de dependências do backend com pip-audit (via uv),
+  # acionada quando existir uv.lock.
   dep-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: pip-audit
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: uv pip audit
         run: |
-          if [ -f backend/requirements.txt ]; then
-            pip install pip-audit
-            pip-audit -r backend/requirements.txt || exit 1
+          cd backend
+          if [ -f uv.lock ]; then
+            uv sync --frozen --no-group dev
+            uv run --no-sync pip-audit || exit 1
           else
-            echo "backend/requirements.txt ainda não existe, pulando"
+            echo "backend/uv.lock ainda não existe, pulando"
           fi

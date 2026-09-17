@@ -8,7 +8,18 @@ license = { text = "MIT" }
 # Dependências reais (fastapi, sqlalchemy, etc.) entram na issue #14.
 dependencies = []
 
-[project.optional-dependencies]
+# Pacote gerenciado por uv (https://docs.astral.sh/uv/). Lockfile em uv.lock.
+# Para usar: uv sync                  (instala tudo)
+#            uv run pytest            (roda pytest no venv)
+#            uv run ruff check .      (roda ruff no venv)
+#            uv add fastapi           (adiciona dep + atualiza lock)
+[tool.uv]
+package = true                              # build wheel/sdist quando publicar
+managed = true                              # uv gerencia o .venv
+
+[dependency-groups]
+# Grupo "dev" — instalado por padrão com `uv sync` em ambiente local.
+# Use `uv sync --no-group dev` em produção ou containers.
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",

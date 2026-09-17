@@ -18,8 +18,8 @@ updates:
           - "minor"
           - "patch"
 
-  # Backend Python
-  - package-ecosystem: "pip"
+  # Backend Python — gerenciado por uv (lockfile em backend/uv.lock)
+  - package-ecosystem: "uv"
     directory: "/backend"
     schedule:
       interval: "weekly"

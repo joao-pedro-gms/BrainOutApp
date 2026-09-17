@@ -16,14 +16,12 @@ cd GerenciaDeProjetosApp
 cp android/local.properties.example android/local.properties
 # editar com sdk.dir=/caminho/para/Android/sdk
 
-# 4. Backend (criar em #14)
+# 4. Backend (criar em #14) — gerenciado por uv
 cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-cp .env.example .env
-# editar .env
-pytest
+# Instalar uv uma vez: https://docs.astral.sh/uv/getting-started/installation/
+uv sync                   # cria .venv e instala tudo a partir de uv.lock
+uv run pytest             # roda testes
+cp .env.example .env      # editar .env com seus valores
 ```
 
 ## Workflow diário
@@ -79,25 +77,32 @@ cd android
 
 ```bash
 cd backend
-source .venv/bin/activate
+# uv gerencia o .venv e o lockfile (uv.lock). Não precisa ativar manualmente.
+uv sync                     # instala deps de produção + dev
+uv sync --no-group dev      # só deps de produção (deploy)
 
 # Lint e testes
-ruff check .                       # lint (R12)
-ruff format .                      # formatador
-pytest                             # testes
-pytest --cov=app --cov-report=term-missing  # cobertura
+uv run ruff check .                       # lint (R12)
+uv run ruff format .                      # formatador
+uv run pytest                             # testes
+uv run pytest --cov=app --cov-report=term-missing  # cobertura
+
+# Adicionar/Remover dependência
+uv add fastapi                             # adiciona + atualiza uv.lock
+uv add --group dev httpx                   # só no grupo dev
+uv remove flask
 
 # Banco
-alembic revision --autogenerate -m "msg"  # criar migration
-alembic upgrade head                      # aplicar
-alembic downgrade -1                      # reverter
+uv run alembic revision --autogenerate -m "msg"   # criar migration
+uv run alembic upgrade head                       # aplicar
+uv run alembic downgrade -1                       # reverter
 
 # Servir
-uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
 # docs em http://localhost:8000/docs
 
 # Auditoria de deps
-pip-audit -r requirements.txt
+uv run pip-audit                          # usa uv.lock, sem pip externo
 ```
 
 ## Debugging
@@ -126,7 +131,7 @@ docker run --rm -v "$PWD":/workspace -w /workspace \
   eclipse-temurin:17-jdk bash -c "cd android && ./gradlew ktlintCheck testDebugUnitTest"
 
 # Rodar Backend CI local
-cd backend && ruff check . && pytest
+cd backend && uv sync && uv run ruff check . && uv run pytest
 ```
 
 ## Variáveis de ambiente
@@ -151,7 +156,7 @@ Copie `backend/.env.example` → `backend/.env`. Nunca comite o `.env`.
 | `pre-commit` bloqueia secret | Token/key no staged | Remover do arquivo, ver [`docs/segredos.md`](segredos.md) |
 | `./gradlew assembleDebug` falha | JDK errado | Instalar JDK 17, `update-alternatives` |
 | Room migration falha | Mudou schema sem migration | `gradlew :app:room.schemaLocation` e gerar migration |
-| `pytest` falha em import | `.venv` não ativado | `source backend/.venv/bin/activate` |
+| `pytest` falha em import | `.venv` não ativado ou falta `uv sync` | `cd backend && uv sync && uv run pytest` |
 | CI verde local, vermelha remoto | Cache stale | Limpar `.gradle` e Actions cache |
 | gitleaks falha no CI | Padrão em `.env.example` pareceu secret | Trocar valor de exemplo |
 
