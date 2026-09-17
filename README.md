@@ -87,7 +87,9 @@ BrainOutApp/
 │   ├── app/                       código (package brainoutapp-backend)
 │   ├── tests/                     testes pytest
 │   └── uv.lock                    lockfile versionado
-├── 🎨 prototipos/                 protótipos de tela (Figma export, PNG, memorial)
+├── 🎨 prototipos/                 wireframes SVG estáticos (393×852)
+│   ├── wireframes/                6 telas (login, projetos, tarefas, dashboard, form, 404)
+│   └── README.md                  convenções e índice
 ├── 📚 docs/                       documentação técnica (custo zero)
 │   ├── arquitetura.md             arquitetura em camadas
 │   ├── dev-guide.md               setup, comandos, debugging

@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 393 852" width="393" height="852" font-family="system-ui, -apple-system, sans-serif">
+  <!-- =========================== -->
+  <!-- WIREFRAME: Projetos          -->
+  <!-- 1) Header                   -->
+  <!-- 2) Lista de 3 cards         -->
+  <!-- =========================== -->
+
+  <rect width="393" height="852" fill="#fafafa"/>
+  <rect x="0.5" y="0.5" width="392" height="851" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+
+  <!-- Status bar + notch -->
+  <rect x="0" y="0" width="393" height="32" fill="#ffffff"/>
+  <text x="20" y="21" font-size="13" fill="#1f2937" font-weight="600">9:41</text>
+  <rect x="350" y="14" width="18" height="10" rx="1" fill="none" stroke="#1f2937" stroke-width="1"/>
+  <rect x="352" y="16" width="14" height="6" fill="#1f2937"/>
+  <rect x="160" y="6" width="73" height="22" rx="11" fill="#1f2937"/>
+
+  <!-- Header (sticky) -->
+  <g transform="translate(0, 32)">
+    <rect width="393" height="56" fill="#ffffff" stroke="#9ca3af" stroke-width="1"/>
+    <!-- Logo + nome (placeholder) -->
+    <rect x="12" y="12" width="32" height="32" rx="6" fill="#e0e7ff"/>
+    <text x="28" y="32" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="ui-monospace, monospace">[x]</text>
+    <text x="52" y="30" font-size="11" font-weight="600" fill="#1f2937">[nome]</text>
+    <text x="52" y="42" font-size="9" fill="#9ca3af">[Projeto]</text>
+
+    <!-- 3 tabs (so icones em mobile) -->
+    <g transform="translate(120, 12)">
+      <rect width="32" height="32" rx="6" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="16" y="20" text-anchor="middle" font-size="11" fill="#4f46e5" font-family="ui-monospace, monospace">[x]</text>
+
+      <rect x="40" width="32" height="32" rx="6" fill="none" stroke="#9ca3af" stroke-width="1"/>
+      <text x="56" y="20" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="ui-monospace, monospace">[x]</text>
+
+      <rect x="80" width="32" height="32" rx="6" fill="none" stroke="#9ca3af" stroke-width="1"/>
+      <text x="96" y="20" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="ui-monospace, monospace">[x]</text>
+    </g>
+
+    <!-- Refresh + avatar (lado direito) -->
+    <g transform="translate(296, 12)">
+      <rect width="32" height="32" rx="6" fill="none" stroke="#9ca3af" stroke-width="1"/>
+      <text x="16" y="20" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="ui-monospace, monospace">~</text>
+
+      <circle cx="56" cy="16" r="14" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+      <text x="56" y="20" text-anchor="middle" font-size="11" fill="#6366f1" font-family="ui-monospace, monospace">[u]</text>
+    </g>
+  </g>
+
+  <!-- Conteudo (rolavel) -->
+  <g transform="translate(0, 88)">
+    <!-- Titulo + botao -->
+    <text x="16" y="20" font-size="20" font-weight="700" fill="#1f2937">Projetos</text>
+    <text x="16" y="38" font-size="11" fill="#6b7280">Gerencie todos os projetos da equipe.</text>
+    <rect x="290" y="8" width="87" height="32" rx="8" fill="#4f46e5"/>
+    <text x="333" y="28" text-anchor="middle" font-size="11" font-weight="600" fill="#ffffff">+ Novo projeto</text>
+
+    <!-- Card 1: Redesign do site institucional -->
+    <g transform="translate(16, 56)">
+      <rect width="361" height="172" rx="12" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5"/>
+      <!-- Titulo + badge -->
+      <text x="14" y="22" font-size="13" font-weight="600" fill="#1f2937">[Nome do projeto]</text>
+      <rect x="277" y="10" width="70" height="20" rx="10" fill="#dbeafe"/>
+      <text x="312" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">Em andamento</text>
+      <!-- Descricao placeholder -->
+      <text x="14" y="42" font-size="11" fill="#6b7280">[Descricao - 1-2 linhas]</text>
+      <line x1="14" y1="50" x2="200" y2="50" stroke="#d1d5db" stroke-width="1"/>
+      <!-- Datas -->
+      <text x="14" y="74" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[cal]</text>
+      <text x="34" y="74" font-size="11" fill="#374151">Inicio: 99/99/9999</text>
+      <text x="200" y="74" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[cal]</text>
+      <text x="220" y="74" font-size="11" fill="#374151">Prazo: 99/99/9999</text>
+      <!-- Tarefas + em aberto -->
+      <text x="14" y="94" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[clip]</text>
+      <text x="34" y="94" font-size="11" fill="#374151">6 tarefa(s)</text>
+      <text x="120" y="94" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[play]</text>
+      <text x="140" y="94" font-size="11" fill="#d97706">4 em aberto</text>
+      <!-- Divisor + excluir -->
+      <line x1="14" y1="138" x2="347" y2="138" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="14" y="156" font-size="11" fill="#9ca3af" font-family="ui-monospace, monospace">[trash]</text>
+      <text x="38" y="156" font-size="11" fill="#dc2626">Excluir</text>
+    </g>
+
+    <!-- Card 2: App mobile de pedidos -->
+    <g transform="translate(16, 240)">
+      <rect width="361" height="172" rx="12" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5"/>
+      <text x="14" y="22" font-size="13" font-weight="600" fill="#1f2937">[Nome do projeto]</text>
+      <rect x="277" y="10" width="70" height="20" rx="10" fill="#dbeafe"/>
+      <text x="312" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">Em andamento</text>
+      <text x="14" y="42" font-size="11" fill="#6b7280">[Descricao - 1-2 linhas]</text>
+      <line x1="14" y1="50" x2="200" y2="50" stroke="#d1d5db" stroke-width="1"/>
+      <text x="14" y="74" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[cal]</text>
+      <text x="34" y="74" font-size="11" fill="#374151">Inicio: 99/99/9999</text>
+      <text x="200" y="74" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[cal]</text>
+      <text x="220" y="74" font-size="11" fill="#374151">Prazo: 99/99/9999</text>
+      <text x="14" y="94" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[clip]</text>
+      <text x="34" y="94" font-size="11" fill="#374151">5 tarefa(s)</text>
+      <text x="120" y="94" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[play]</text>
+      <text x="140" y="94" font-size="11" fill="#d97706">4 em aberto</text>
+      <line x1="14" y1="138" x2="347" y2="138" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="14" y="156" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[trash]</text>
+      <text x="38" y="156" font-size="11" fill="#dc2626">Excluir</text>
+    </g>
+
+    <!-- Card 3: Integracao (Concluido) -->
+    <g transform="translate(16, 424)">
+      <rect width="361" height="172" rx="12" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5"/>
+      <text x="14" y="22" font-size="13" font-weight="600" fill="#1f2937">[Nome do projeto]</text>
+      <rect x="285" y="10" width="62" height="20" rx="10" fill="#dcfce7"/>
+      <text x="316" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">Concluido</text>
+      <text x="14" y="42" font-size="11" fill="#6b7280">[Descricao - 1-2 linhas]</text>
+      <line x1="14" y1="50" x2="200" y2="50" stroke="#d1d5db" stroke-width="1"/>
+      <text x="14" y="74" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[cal]</text>
+      <text x="34" y="74" font-size="11" fill="#374151">Inicio: 99/99/9999</text>
+      <text x="200" y="74" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[cal]</text>
+      <text x="220" y="74" font-size="11" fill="#374151">Prazo: 99/99/9999</text>
+      <text x="14" y="94" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[clip]</text>
+      <text x="34" y="94" font-size="11" fill="#374151">2 tarefa(s)</text>
+      <text x="120" y="94" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[play]</text>
+      <text x="140" y="94" font-size="11" fill="#6b7280">0 em aberto</text>
+      <line x1="14" y1="138" x2="347" y2="138" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="14" y="156" font-size="10" fill="#9ca3af" font-family="ui-monospace, monospace">[trash]</text>
+      <text x="38" y="156" font-size="11" fill="#dc2626">Excluir</text>
+    </g>
+
+    <!-- Indicador de scroll -->
+    <text x="196" y="640" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="ui-monospace, monospace">... scroll para mais ...</text>
+  </g>
+
+  <!-- Home indicator -->
+  <rect x="130" y="838" width="133" height="4" rx="2" fill="#1f2937"/>
+</svg>
