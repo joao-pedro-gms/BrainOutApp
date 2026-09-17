@@ -70,7 +70,7 @@ android/
 | 4 | `tarefas`             | `prototipos/wireframes/04-tarefas.svg`            | ✅   |
 | 5a| `criacao`             | `prototipos/wireframes/05-tarefa-form.svg`        | ✅   |
 | 5b| `criacao/tarefa?projetoId=&tarefaId=` | (formulário de **tarefa**)            | ✅ (#10) |
-| 6 | `dashboard`           | `prototipos/wireframes/06-dashboard.svg`          | ✅   |
+| 6 | `dashboard`           | `prototipos/wireframes/06-dashboard.svg`          | ✅ (#13) |
 
 > A rota 5a (`criacao`) continua sendo o formulário de **projeto** (issue #8).
 > A rota 5b (`criacao/tarefa?…`) é a nova entrada do CRUD de **tarefa** (issue #10).
@@ -270,7 +270,35 @@ argumento de navegação (`NavType.StringType`).
   - Backend equivalente (`app/services/`) — ADR-0005: app 100%
     offline, regra fica só no Android. Quando #14 vier, vai duplicar
     a regra no FastAPI com as mesmas mensagens.
+## 🔁 O que entrou no ciclo 4 (issue #13 — Dashboard)
 
+
+- **`viewmodel/DashboardViewModel.kt`** (`@HiltViewModel`) injeta
+  `ProjetoRepository` + `TarefaRepository` e combina os dois `Flow`s via
+  `combine(...)` + `stateIn(...)` para emitir `StateFlow<UiState<DashboardUiState>>`.
+  Cálculo puro (`calcular()`) é determinístico e facilita teste futuro;
+  `Clock` é injetável (default `systemDefaultZone`). Sem `print()` —
+  logs via `android.util.Log` (tag `DashboardVM`).
+- **`ui/screens/dashboard/DashboardUiState.kt`**: data class com
+  `atrasadas`, `concluidas`, `abertas`, `prazo7d`, `totalProjetos`,
+  `totalTarefas`, `tarefasPorDia` (`List<Pair<LocalDate, Int>>`) e
+  `proximasTarefasPrazo` (até 5 tarefas ordenadas por prazo/prioridade).
+  Reaproveita o `UiState` existente como wrapper Loading/Success/Error.
+- **`ui/components/SimpleBarChart.kt`**: gráfico de barras **sem
+  dependências externas**, desenhado em `Canvas` puro (issue #13
+  dispensou libs tipo MPAndroidChart/Vico). Recebe
+  `List<Pair<String, Int>>`, usa `MaterialTheme.colorScheme.primary`
+  (token `accentPrimary`) e desenha com `drawRect` dentro de
+  `DrawScope`. Rótulo 1-char por dia (`S T Q Q S S D` em pt-BR).
+- **`ui/screens/dashboard/DashboardScreen.kt`** (issue #13 — antes era
+  stub): header com data em pt-BR, card "Atrasadas" (número em
+  `colorScheme.error`), card "Concluídas vs Abertas" com
+  `LinearProgressIndicator`, card "Prazo 7 dias" com lista compacta
+  das próximas 5 tarefas, `SimpleBarChart` com a série de 7 dias e
+  footer com totais (projetos + tarefas). Empty state explícito quando
+  não há projetos. Cores 100% via tokens semânticos do design system.
+- Sem novas rotas — `dashboard` já existia no `Destinations.kt` e no
+  `BrainOutAppNavHost.kt`.
 ## 🚀 Como rodar
 
 ### Pré-requisitos
@@ -325,7 +353,6 @@ find android -name '*.kt' -o -name '*.kts' -o -name '*.toml' | head -30
 |-------|-----------------------------------------------------------------------------|
 | #7    | Autenticação real (2 perfis: Gerente / Colaborador) — `viewmodel/` + DataStore |
 | #10   | Criação de projeto + Room (`data/local/`, `domain/model/`, `domain/usecase/`) |
-| #13   | Biblioteca de gráficos do dashboard                                        |
 | #14   | Sincronização offline → online (WorkManager + Retrofit + `data/repository/`) |
 | #15   | Deep links + notificações (R7 + R8)                                        |
 
