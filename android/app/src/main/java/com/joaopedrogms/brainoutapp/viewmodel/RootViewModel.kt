@@ -3,6 +3,7 @@ package com.joaopedrogms.brainoutapp.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joaopedrogms.brainoutapp.data.preferences.PerfilPreferencesRepository
+import com.joaopedrogms.brainoutapp.data.security.SecurityPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,25 +16,34 @@ import javax.inject.Inject
  *
  *  - [Loading]        → ainda lendo DataStore (cold start).
  *  - [NeedsOnboarding] → perfil indefinido → start = `onboarding`.
- *  - [Authenticated]  → perfil definido → start = `projetos` (home).
+ *  - [NeedsUnlock]    → perfil definido **e** AppLock ativo
+ *                        → tela de bloqueio standalone (ver
+ *                        `ui/screens/applock/AppLockScreen.kt`).
+ *                        Após o unlock, `refresh()` é chamado e o
+ *                        estado passa a [Authenticated].
+ *  - [Authenticated]  → perfil definido (e, se havia senha, já
+ *                        desbloqueado nesta sessão) → start = `projetos`.
  *
  * Esse mapeamento vive aqui (e não no `NavHost` diretamente) porque o
  * NavHost exige uma `String` resolvida antes do primeiro compose — uma
  * `suspend` na decisão do `startDestination` não é possível. O
  * `BrainOutAppNavHost` então aguarda [RootViewModel.state] virar não-
- * Loading antes de montar o `NavHost`.
+ * Loading antes de montar o `NavHost` (e trata `NeedsUnlock` como uma
+ * tela **fora** do NavHost, conforme ADR-0006).
  *
  * Origem: ADR-0006 — fluxo do cold start.
  */
 sealed interface RootStartState {
     data object Loading : RootStartState
     data object NeedsOnboarding : RootStartState
+    data object NeedsUnlock : RootStartState
     data object Authenticated : RootStartState
 }
 
 @HiltViewModel
 class RootViewModel @Inject constructor(
     private val perfilRepo: PerfilPreferencesRepository,
+    private val securityRepo: SecurityPreferencesRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<RootStartState>(RootStartState.Loading)
@@ -44,9 +54,10 @@ class RootViewModel @Inject constructor(
     }
 
     /**
-     * Relê o perfil do DataStore e atualiza [state]. Idempotente —
-     * chamado no `init` e pode ser invocado novamente após mudanças
-     * (ex.: quando a tela de Configurações alterar o perfil).
+     * Relê o perfil do DataStore e o estado de AppLock, e atualiza
+     * [state]. Idempotente — chamado no `init` e sempre que algo
+     * muda (ex.: Configurações alterar o perfil, ou o AppLock ser
+     * desbloqueado/removido).
      */
     fun refresh() {
         viewModelScope.launch {
@@ -61,7 +72,15 @@ class RootViewModel @Inject constructor(
             _state.value = if (perfil == null) {
                 RootStartState.NeedsOnboarding
             } else {
-                RootStartState.Authenticated
+                val lockEnabled = try {
+                    securityRepo.isLockEnabled()
+                } catch (t: Throwable) {
+                    // Falha ao ler prefs cifradas (KeyStore corrompido, etc.)
+                    // → não bloqueia o app. Log fica para diagnóstico.
+                    android.util.Log.w("RootViewModel", "Falha ao ler AppLock", t)
+                    false
+                }
+                if (lockEnabled) RootStartState.NeedsUnlock else RootStartState.Authenticated
             }
         }
     }

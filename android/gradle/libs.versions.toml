@@ -25,6 +25,9 @@ okhttp = "4.12.0"
 # DataStore Preferences — persistência local do perfil (ADR-0006)
 room = "2.6.1"
 
+# Security — EncryptedSharedPreferences para o hash da senha (ADR-0006, AppLock)
+security-crypto = "1.1.0-alpha06"
+
 [libraries]
 # Compose BOM mantém todas as libs Compose alinhadas (ver versões no BOM).
 androidx-core-ktx              = { group = "androidx.core",                name = "core-ktx",                              version.ref = "core-ktx" }
@@ -60,6 +63,9 @@ androidx-datastore-preferences = { group = "androidx.datastore",           name 
 androidx-room-runtime          = { group = "androidx.room",                name = "room-runtime",                          version.ref = "room" }
 androidx-room-ktx              = { group = "androidx.room",                name = "room-ktx",                              version.ref = "room" }
 androidx-room-compiler         = { group = "androidx.room",                name = "room-compiler",                         version.ref = "room" }
+
+# Security (EncryptedSharedPreferences + MasterKey AES256_GCM) — AppLock (ADR-0006)
+androidx-security-crypto       = { group = "androidx.security",            name = "security-crypto",                       version.ref = "security-crypto" }
 
 # Testes
 junit                          = { group = "junit",                        name = "junit",                                 version.ref = "junit" }
