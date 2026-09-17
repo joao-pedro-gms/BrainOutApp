@@ -1,5 +1,8 @@
 name: Android CI
 
+# Wrapper fino sobre o workflow reutilizável verify-android.
+# Mantido para preservar o histórico do CI (este arquivo já existia no PR #29).
+
 on:
   push:
     branches: [master]
@@ -7,43 +10,13 @@ on:
   pull_request:
     paths: ["android/**"]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      # Android CI depende do Gradle wrapper criado na issue #6.
-      # Quando o wrapper ainda não existir, marcamos skip com aviso em vez de falhar.
-      - name: Detectar Gradle wrapper
-        id: gradle
-        run: |
-          if [ -x ./gradlew ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Gradle wrapper ausente. Issue #6 cria o wrapper; até lá, skip do build Android."
-          fi
-
-      - uses: gradle/actions/setup-gradle@v4
-        if: steps.gradle.outputs.present == 'true'
-
-      - name: ktlint
-        if: steps.gradle.outputs.present == 'true'
-        run: ./gradlew ktlintCheck
-
-      - name: Testes unitários
-        if: steps.gradle.outputs.present == 'true'
-        run: ./gradlew testDebugUnitTest
-
-      - name: Build debug
-        if: steps.gradle.outputs.present == 'true'
-        run: ./gradlew assembleDebug
+  verify-android:
+    uses: ./.github/workflows/verify-android.yml
+    with:
+      gradle-task: "assembleDebug"
+      run-ktlint: "yes"
+      run-tests: "yes"
