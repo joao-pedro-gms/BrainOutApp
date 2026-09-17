@@ -95,7 +95,7 @@ class TarefaListViewModel @Inject constructor(
             }
         }
         .combine(_filtroStatus) { lista, filtro ->
-            if (filtro == null) lista else lista.filter { it.status == filtro }
+            if (filtro == null) lista else lista.filter { it.status == filtro.name }
         }
         .map { lista ->
             UiState.Success(lista.map { it.toDomain() }) as UiState<List<Tarefa>>

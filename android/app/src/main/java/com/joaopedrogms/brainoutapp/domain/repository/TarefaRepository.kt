@@ -27,6 +27,9 @@ interface TarefaRepository {
     /** Detalhe de uma tarefa pelo id, reativo. `null` se não existir / soft-deleted. */
     fun getById(id: String): Flow<Tarefa?>
 
+    /** Snapshot único (não-Flow) para leituras pontuais (RN01, form no carregamento inicial). */
+    suspend fun getByIdOnce(id: String): Tarefa?
+
     /**
      * Snapshot único das tarefas de um projeto (ativas). Usado por
      * [com.joaopedrogms.brainoutapp.domain.usecase.ConcluirProjetoUseCase]
