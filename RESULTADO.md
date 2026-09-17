@@ -518,3 +518,110 @@ uv run ruff check .                              # lint
 uv run alembic upgrade head                      # aplica migrations no banco configurado
 uv run uvicorn app.main:app --reload             # sobe o servidor (porta 8000)
 ```
+
+---
+
+# PARTE C — Lane onboarding (issue #7 reciclada — ADR-0006)
+
+**Branch:** `feature/onboarding`
+**Worktree:** `/home/joaopgms/Projetos/wt-onboarding`
+**Tracking:** `origin/master`
+**Origem:** board `/home/joaopgms/Projetos/BrainOutApp/docs/BOARD.md` — lane onboarding (ADR-0006).
+
+> Tela de seleção de perfil local (Gerente / Colaborador) com DataStore Preferences;
+> NavHost passa a decidir start destination (`onboarding` se perfil indefinido,
+> `projetos` se já definido).
+
+## 1. Arquivos criados
+
+| Path | Conteúdo |
+|------|----------|
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/data/preferences/PerfilPreferences.kt` | `enum Perfil { GERENTE, COLABORADOR }`, `interface PerfilPreferencesRepository` (`getPerfil`/`setPerfil`), impl `@Inject @Singleton` via `Context.preferencesDataStore(name = "brainoutapp_prefs")`, chave `perfil_usuario`. |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/di/PreferencesModule.kt` | `@Module @InstallIn(SingletonComponent::class) abstract class` com `@Binds @Singleton` `PerfilPreferencesRepositoryImpl → PerfilPreferencesRepository`. |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingViewModel.kt` | `@HiltViewModel`, expõe `saving: StateFlow<Boolean>` e `error: StateFlow<String?>`, `fun setPerfil(p, onSaved)` idempotente em `viewModelScope`. |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt` | Composable Material 3: `Scaffold` + `TopAppBar`, headline + 2 CTAs (`Button`/`OutlinedButton` ≥ 56dp) usando tokens semânticos; `Preview`. |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/RootViewModel.kt` | `sealed interface RootStartState { Loading; NeedsOnboarding; Authenticated }`; `@HiltViewModel` lê `PerfilPreferencesRepository.getPerfil()` e expõe `state: StateFlow<RootStartState>`. |
+
+## 2. Arquivos modificados
+
+| Path | Mudança |
+|------|---------|
+| `android/gradle/libs.versions.toml` | +`datastore-preferences = "1.1.1"`; +`androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore-preferences" }`; +`androidx-lifecycle-runtime-compose` (suporte a `collectAsStateWithLifecycle`). |
+| `android/app/build.gradle.kts` | +`implementation(libs.androidx.datastore.preferences)`; +`implementation(libs.androidx.lifecycle.runtime.compose)`. |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt` | +`const val ONBOARDING = "onboarding"`. |
+| `android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt` | Reescrito: consome `RootViewModel` (Hilt), decide start (`ONBOARDING` ou `PROJETOS`), helper `RootLoadingScreen` enquanto `Loading`; rota `ONBOARDING` adicionada com `popUpTo(ONBOARDING) { inclusive = true }` + `rootViewModel.refresh()`. Rotas existentes (`LOGIN`, `PROJETOS`, `DETALHES`, `TAREFAS`, `CRIACAO`, `DASHBOARD`) preservadas. |
+
+## 3. Comandos de verificação (saída literal)
+
+```
+$ ls android/app/src/main/java/com/joaopedrogms/brainoutapp/data/preferences/
+PerfilPreferences.kt
+
+$ grep -n 'datastore-preferences' android/gradle/libs.versions.toml
+15:datastore-preferences = "1.1.1"
+56:androidx-datastore-preferences = { group = "androidx.datastore",           name = "datastore-preferences",                version.ref = "datastore-preferences" }
+
+$ grep -n 'ONBOARDING' android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt
+18:    const val ONBOARDING = "onboarding"
+
+$ grep -rn 'OnboardingScreen' android/app/src/main/java/com/joaopedrogms/brainoutapp/
+android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt:27:import com.joaopedrogms.brainoutapp.ui.screens.onboarding.OnboardingScreen
+android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt:74:                    OnboardingScreen(
+android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt:42:fun OnboardingScreen(
+android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt:121:private fun OnboardingScreenPreview() {
+android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/OnboardingScreen.kt:125:        OnboardingScreen()
+
+$ git status --short
+ M android/app/build.gradle.kts
+ M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/BrainOutAppNavHost.kt
+ M android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/navigation/Destinations.kt
+ M android/gradle/libs.versions.toml
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/data/preferences/
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/di/PreferencesModule.kt
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/ui/screens/onboarding/
+?? android/app/src/main/java/com/joaopedrogms/brainoutapp/viewmodel/RootViewModel.kt
+```
+
+## 4. Critérios de aceite
+
+| # | Critério | Status |
+|---|----------|--------|
+| 1 | `ls data/preferences/` mostra `PerfilPreferences.kt` | ✅ |
+| 2 | `grep 'datastore-preferences' libs.versions.toml` retorna entrada (versão + alias) | ✅ |
+| 3 | `grep 'ONBOARDING' Destinations.kt` aparece (constante na rota) | ✅ |
+| 4 | `grep -rn 'OnboardingScreen'` retorna ≥ 2 matches (declaração + uso no NavHost) | ✅ (5 matches) |
+| 5 | `PerfilPreferences.kt` contém enum `Perfil { GERENTE, COLABORADOR }`, interface e impl com `@Inject constructor(@ApplicationContext)` | ✅ |
+| 6 | `PreferencesModule.kt` faz `@Binds @Singleton` da interface → impl | ✅ |
+| 7 | `OnboardingViewModel` é `@HiltViewModel` com `setPerfil` em `viewModelScope` | ✅ |
+| 8 | `OnboardingScreen` usa tokens semânticos (`MaterialTheme.colorScheme.primary/secondary/onBackground/onSurfaceVariant/error`) | ✅ |
+| 9 | `BrainOutAppNavHost` decide `startDestination` dinamicamente via `RootViewModel` | ✅ |
+| 10 | `RootViewModel` decide start com base em `PerfilPreferencesRepository.getPerfil()` | ✅ |
+| 11 | Sem `print()` — usa `android.util.Log` | ✅ |
+| 12 | Compatível com Compose BOM 2024.08 / Material 3 / Kotlin 1.9.24 / Hilt 2.51.1 / Navigation 2.7.7 | ✅ |
+| 13 | Sem `./gradlew` rodado (sem SDK Android local) | ✅ |
+| 14 | Nada commitado / pushed / PR aberto | ✅ |
+| 15 | Anti-colisão: nenhuma alteração fora do escopo permitido | ✅ |
+
+## 5. Pendências / blockers
+
+- **Sem bloqueadores.**
+- Senha local (AppLock via `EncryptedSharedPreferences`) está fora do escopo desta lane — `login` permanece no grafo como stub; reavaliação em ciclo futuro conforme ADR-0006.
+- Testes unitários (`PerfilPreferencesTest`, `OnboardingViewModelTest`) também fora do escopo desta lane; ADR-0006 lista-os como item separado.
+- Não rodei `./gradlew` por falta de SDK Android local — verificação é estática.
+
+## 6. Anti-colisão — diff resumido desta lane
+
+```
+android/app/build.gradle.kts                                            | +5
+android/app/src/main/java/com/joaopedrogms/brainoutapp/
+  data/preferences/PerfilPreferences.kt                                 | +criado
+  di/PreferencesModule.kt                                               | +criado
+  ui/screens/onboarding/OnboardingScreen.kt                             | +criado
+  ui/screens/onboarding/OnboardingViewModel.kt                          | +criado
+  ui/navigation/BrainOutAppNavHost.kt                                   | reescrito (start dinâmico + rota ONBOARDING)
+  ui/navigation/Destinations.kt                                         | +1 linha (const val ONBOARDING)
+  viewmodel/RootViewModel.kt                                            | +criado
+android/gradle/libs.versions.toml                                       | +4 linhas (versão + alias datastore + lifecycle-runtime-compose)
+```
+
+Nenhuma alteração em: `projetos/`, `tarefas/`, `dashboard/`, `criacao/`, `detalhes/`, `login/`, `theme/`, `BrainOutApp.kt`, `MainActivity.kt`, `AppModule.kt`, `AppSmokeTest.kt`, ou em qualquer outro worktree (`wt-crud-projetos`, raiz).

@@ -15,6 +15,7 @@ package com.joaopedrogms.brainoutapp.ui.navigation
  *   - Dashboard          → 06-dashboard.svg          (R9)
  */
 object Destinations {
+    const val ONBOARDING = "onboarding"
     const val LOGIN = "login"
     const val PROJETOS = "projetos"
     const val DETALHES_PROJETO_ROUTE = "detalhes/{projetoId}"
