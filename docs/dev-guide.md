@@ -1,175 +1,245 @@
-# Dev Guide
+# 🛠️ Dev Guide
 
-Setup, comandos do dia a dia e debugging.
+> Setup, comandos do dia a dia, debugging e troubleshooting do **BrainOutApp**.
 
-## Setup inicial
+## 📋 Índice
+
+- [🚀 Setup inicial](#-setup-inicial)
+- [🌅 Workflow diário](#-workflow-diário)
+- [📱 Comandos Android](#-comandos-android)
+- [🐍 Comandos Backend (uv)](#-comandos-backend-uv)
+- [🐞 Debugging](#-debugging)
+- [🌍 Variáveis de ambiente](#-variáveis-de-ambiente)
+- [❗ Erros comuns](#-erros-comuns)
+- [🔗 Recursos](#-recursos)
+
+---
+
+## 🚀 Setup inicial
 
 ```bash
 # 1. Clonar
-git clone https://github.com/joao-pedro-gms/GerenciaDeProjetosApp.git
-cd GerenciaDeProjetosApp
+git clone https://github.com/joao-pedro-gms/BrainOutApp.git
+cd BrainOutApp
 
-# 2. Hooks de commit
+# 2. Ativar hooks de commit
 ./scripts/setup.sh
+#   → pre-commit: scan de secrets
+#   → commit-msg: Conventional Commits
 
-# 3. Android (criar em #6)
+# 3. Configurar Android (após issue #6 criar o esqueleto)
 cp android/local.properties.example android/local.properties
 # editar com sdk.dir=/caminho/para/Android/sdk
 
-# 4. Backend (criar em #14) — gerenciado por uv
+# 4. Configurar Backend com uv
 cd backend
 # Instalar uv uma vez: https://docs.astral.sh/uv/getting-started/installation/
-uv sync                   # cria .venv e instala tudo a partir de uv.lock
-uv run pytest             # roda testes
-cp .env.example .env      # editar .env com seus valores
+uv sync                 # cria .venv e instala tudo a partir de uv.lock
+uv run pytest           # roda testes
+cp .env.example .env    # editar .env com seus valores
 ```
 
-## Workflow diário
+> 💡 **Dica:** uv é 10–100× mais rápido que pip e gera um lockfile determinístico (`uv.lock`). Não precisa ativar o venv manualmente — `uv run <cmd>` resolve tudo.
+
+---
+
+## 🌅 Workflow diário
 
 ```bash
-# Sincronizar
+# Sincronizar com master
 git checkout master && git pull
 
 # Criar branch a partir da issue
-git checkout -b feature/<escopo-curto>   # ou fix/, docs/, chore/
+git checkout -b feature/<escopo-curto>    # ou fix/, docs/, chore/, test/
 
 # Trabalhar
 git add .
 git commit -m "feat(auth): adiciona login com e-mail e senha"
-# hook valida Conventional Commits + scan secrets
+#   ↑ hook valida Conventional Commits + scan secrets
 
 # Antes do PR
 ./scripts/quality-check.sh
 git push -u origin feature/<escopo-curto)
-gh pr create --fill  # preenche o template; editar Closes #N
+gh pr create --fill   # preenche o template; editar Closes #N
 
-# Após merge
+# Após o merge
 git checkout master && git pull
 git branch -d feature/<escopo-curto>
 ```
 
-## Comandos por stack
+---
 
-### Android
+## 📱 Comandos Android
 
 ```bash
 cd android
 
-# Build
-./gradlew assembleDebug
-./gradlew assembleRelease   # requer keystore em local.properties
+# 🔨 Build
+./gradlew assembleDebug                      # APK debug
+./gradlew assembleRelease                    # release (requer keystore em local.properties)
 
-# Lint e testes
-./gradlew ktlintCheck       # estilo (R12)
-./gradlew detekt            # complexidade (R12)
-./gradlew testDebugUnitTest # testes unitários
-./gradlew testReleaseUnitTest
+# 🔍 Lint e qualidade (R12)
+./gradlew ktlintCheck                        # estilo
+./gradlew detekt                             # complexidade
+./gradlew lint                               # Android Lint oficial
 
-# Banco
+# 🧪 Testes
+./gradlew testDebugUnitTest                  # testes unitários
+./gradlew testReleaseUnitTest                # testes release
+
+# 🗃️ Banco (R5)
 ./gradlew :app:room.schemaLocation="$PWD/schemas"
-# versionar schemas/ para migrations (R5)
+#   ↑ versionar schemas/ para migrations automáticas
 
-# Limpar
+# 🧹 Limpar
 ./gradlew clean
 ```
 
-### Backend
+| Tarefa | Comando |
+|--------|---------|
+| Buildar APK debug | `./gradlew assembleDebug` |
+| Rodar todos os checks | `./gradlew check` |
+| Gerar APK release | `./gradlew assembleRelease` |
+
+---
+
+## 🐍 Comandos Backend (uv)
 
 ```bash
 cd backend
-# uv gerencia o .venv e o lockfile (uv.lock). Não precisa ativar manualmente.
-uv sync                     # instala deps de produção + dev
-uv sync --no-group dev      # só deps de produção (deploy)
 
-# Lint e testes
-uv run ruff check .                       # lint (R12)
-uv run ruff format .                      # formatador
-uv run pytest                             # testes
-uv run pytest --cov=app --cov-report=term-missing  # cobertura
+# 📦 Sincronizar dependências
+uv sync                      # deps de produção + dev
+uv sync --no-group dev       # só produção (para deploy/containers)
 
-# Adicionar/Remover dependência
-uv add fastapi                             # adiciona + atualiza uv.lock
-uv add --group dev httpx                   # só no grupo dev
+# 🔍 Lint e qualidade (R12)
+uv run ruff check .          # lint
+uv run ruff format .         # formatador
+
+# 🧪 Testes
+uv run pytest
+uv run pytest --cov=app --cov-report=term-missing   # com cobertura
+
+# ➕➖ Dependências
+uv add fastapi                                    # produção
+uv add --group dev httpx                          # só dev
 uv remove flask
 
-# Banco
+# 🗃️ Banco (Alembic)
 uv run alembic revision --autogenerate -m "msg"   # criar migration
 uv run alembic upgrade head                       # aplicar
-uv run alembic downgrade -1                       # reverter
+uv run alembic downgrade -1                       # reverter 1 passo
 
-# Servir
+# 🚀 Servir
 uv run uvicorn app.main:app --reload --port 8000
-# docs em http://localhost:8000/docs
+#   → docs interativas: http://localhost:8000/docs
 
-# Auditoria de deps
-uv run pip-audit                          # usa uv.lock, sem pip externo
+# 🔐 Auditoria de vulnerabilidades
+uv run pip-audit              # usa uv.lock, sem pip externo
 ```
 
-## Debugging
+| Tarefa | Comando |
+|--------|---------|
+| Instalar deps | `uv sync` |
+| Rodar testes | `uv run pytest` |
+| Servir local | `uv run uvicorn app.main:app --reload` |
+| Auditoria de deps | `uv run pip-audit` |
 
-### Android
+---
 
-- **Logcat** filtrar por tag do app: `adb logcat -s "GPA:*"`
-- **Layout Inspector** → Android Studio → Tools → Layout Inspector
-- **Database Inspector** → Studio → View → Tool Windows → Database Inspector (Room)
-- **Compose Preview** → abre o Composable e usa o painel direito
-- **Stetho / Flipper** → opcional, não instalado
+## 🐞 Debugging
 
-### Backend
+### 📱 Android
 
-- **FastAPI docs** → `http://localhost:8000/docs`
-- **pytest -x -v** → para no primeiro erro
-- **ipython + breakpoint** → `breakpoint()` em qualquer lugar
-- **SQLAlchemy echo** → `echo=True` na engine mostra SQL gerado
-- **Migrations quebradas** → `alembic downgrade base && alembic upgrade head`
+| Ferramenta | Como usar |
+|------------|-----------|
+| **Logcat** | `adb logcat -s "GPA:*"` (filtra por tag do app) |
+| **Layout Inspector** | Android Studio → Tools → Layout Inspector |
+| **Database Inspector** | Studio → View → Tool Windows → Database Inspector (Room) |
+| **Compose Preview** | Selecionar o Composable → painel direito |
+| **Stetho / Flipper** | Opcional, não instalado |
 
-### CI
+### 🐍 Backend
+
+| Ferramenta | Como usar |
+|------------|-----------|
+| **FastAPI docs** | http://localhost:8000/docs (auto-gerado) |
+| **pytest -x -v** | Para no primeiro erro, modo verboso |
+| **breakpoint()** | `breakpoint()` em qualquer lugar → abre REPL |
+| **SQLAlchemy echo** | `engine = create_engine(..., echo=True)` mostra SQL |
+| **Migrations quebradas** | `uv run alembic downgrade base && uv run alembic upgrade head` |
+
+### ⚙️ CI local
 
 ```bash
-# Rodar Android CI local
+# Android CI
 docker run --rm -v "$PWD":/workspace -w /workspace \
   eclipse-temurin:17-jdk bash -c "cd android && ./gradlew ktlintCheck testDebugUnitTest"
 
-# Rodar Backend CI local
+# Backend CI
 cd backend && uv sync && uv run ruff check . && uv run pytest
 ```
 
-## Variáveis de ambiente
+---
 
-### Android (`local.properties`, **não versionado**)
+## 🌍 Variáveis de ambiente
+
+### 📱 Android — `android/local.properties` (**não versionado**)
 
 ```properties
 sdk.dir=/home/SEU_USUARIO/Android/Sdk
 API_BASE_URL=http://10.0.2.2:8000
-# (opcional) RELEASE_KEYSTORE_PATH=...
+# (opcional) RELEASE_KEYSTORE_PATH=/caminho/seguro/release.jks
+# (opcional) RELEASE_KEYSTORE_PASSWORD=...
+# (opcional) RELEASE_KEY_ALIAS=...
+# (opcional) RELEASE_KEY_PASSWORD=...
 ```
 
-### Backend (`.env`, **não versionado**)
+### 🐍 Backend — `backend/.env` (**não versionado**)
 
-Copie `backend/.env.example` → `backend/.env`. Nunca comite o `.env`.
+Copie `backend/.env.example` → `backend/.env` e edite. **Nunca** comite o `.env`.
 
-## Erros comuns
+---
 
-| Erro | Causa | Solução |
-|------|-------|---------|
-| `commit-msg` rejeita | Mensagem fora do Conventional Commits | `git commit --amend -m "feat(...): ..."` |
+## ❗ Erros comuns
+
+| ❌ Erro | 🔍 Causa | ✅ Solução |
+|---------|---------|-----------|
+| `commit-msg` rejeita a mensagem | Fora do Conventional Commits | `git commit --amend -m "feat(...): ..."` |
 | `pre-commit` bloqueia secret | Token/key no staged | Remover do arquivo, ver [`docs/segredos.md`](segredos.md) |
 | `./gradlew assembleDebug` falha | JDK errado | Instalar JDK 17, `update-alternatives` |
-| Room migration falha | Mudou schema sem migration | `gradlew :app:room.schemaLocation` e gerar migration |
-| `pytest` falha em import | `.venv` não ativado ou falta `uv sync` | `cd backend && uv sync && uv run pytest` |
+| Room migration falha | Mudou schema sem migration | `./gradlew :app:room.schemaLocation` e gerar migration |
+| `pytest` falha em import | `.venv` não existe | `cd backend && uv sync && uv run pytest` |
 | CI verde local, vermelha remoto | Cache stale | Limpar `.gradle` e Actions cache |
-| gitleaks falha no CI | Padrão em `.env.example` pareceu secret | Trocar valor de exemplo |
+| `uv sync` falha no CI | `uv.lock` mudou | Rodar `uv lock` local e commitar |
+| gitleaks falha no CI | Padrão em `.env.example` pareceu secret | Trocar valor de exemplo (sem palavras-chave de secret) |
 
-## Quando algo dá errado no fluxo
+---
 
-1. Leia a mensagem de erro inteira — não chute
-2. Rode o comando localmente (mais rápido que iterar no CI)
-3. Se for bug em runtime, escreva um teste que reproduza **antes** de corrigir (TDD, R4)
-4. Documente a decisão no [`docs/adr/`](adr/) se for arquitetural
+## 🆘 Quando algo dá errado no fluxo
 
-## Recursos
+1. 📖 Leia a mensagem de erro inteira — não chute
+2. 💻 Rode o comando localmente (mais rápido que iterar no CI)
+3. 🧪 Se for bug em runtime, escreva um teste que reproduza **antes** de corrigir (TDD, R4)
+4. 📋 Documente a decisão no [`docs/adr/`](adr/) se for arquitetural
 
-- [Documento norteador do PI](../Documentos/Faculdade/Documento%20Norteador%20Projeto%20Integrador%20ADS%202026-2.pdf)
-- [Plano de implementação](PLAN-IMPLEMENTACAO.md)
-- [CONTRIBUTING.md](../CONTRIBUTING.md)
-- [ADRs](adr/)
+---
+
+## 🔗 Recursos
+
+| | |
+|---|---|
+| 📄 [Documento norteador do PI](../Documentos/Faculdade/Documento%20Norteador%20Projeto%20Integrador%20ADS%202026-2.pdf) | Requisitos R1-R14, cronograma, avaliação |
+| 🗺️ [Plano de implementação](PLAN-IMPLEMENTACAO.md) | Mapeamento issue → comandos |
+| 🤝 [CONTRIBUTING.md](../CONTRIBUTING.md) | Regras da equipe |
+| 🏗️ [arquitetura.md](arquitetura.md) | Decisões arquiteturais |
+| 📋 [ADRs](adr/) | Decisões técnicas registradas |
+| 🐍 [uv docs](https://docs.astral.sh/uv/) | Gerenciador Python usado no projeto |
+
+---
+
+<div align="center">
+
+<sub>🛠️ Dúvidas? Abra uma [issue](https://github.com/joao-pedro-gms/BrainOutApp/issues) com a label `question`.</sub>
+
+</div>

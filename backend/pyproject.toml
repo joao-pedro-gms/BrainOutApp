@@ -1,7 +1,7 @@
 [project]
-name = "gerenciadeprojetos-backend"
+name = "brainoutapp-backend"
 version = "0.1.0"
-description = "API REST para o GerenciaDeProjetosApp (Projeto Integrador ADS 2026/2)"
+description = "API REST para o BrainOutApp (Projeto Integrador ADS 2026/2)"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 
