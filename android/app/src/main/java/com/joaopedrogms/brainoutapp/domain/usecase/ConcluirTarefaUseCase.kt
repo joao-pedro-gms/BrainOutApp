@@ -57,18 +57,14 @@ class ConcluirTarefaUseCase @Inject constructor(
         }
 
         // Carrega dependências e verifica cada uma.
+        // Dependência soft-deleted (nao retornada pelo DAO) e tratada como
+        // satisfeita: a regra nao fica "presa para sempre" se a tarefa-mae
+        // for apagada. Id orfao (id inexistente que nunca existiu) tambem
+        // e tratado como satisfeita — conservativo para evitar deadlock.
         val dependencias = repository.getByIdsOnce(tarefa.dependencias)
         val porId = dependencias.associateBy { it.id }
         tarefa.dependencias.forEach { idDep ->
-            val dep = porId[idDep]
-            if (dep == null) {
-                // Dependência não existe mais (id órfão). Decisão:
-                // tratamos como pendente para não "liberar" conclusão
-                // silenciosamente quando há dado inconsistente.
-                throw RegrasNegocioException(
-                    "Não é possível concluir: a tarefa '$idDep' ainda está pendente.",
-                )
-            }
+            val dep = porId[idDep] ?: return@forEach  // soft-deleted ou inexistente: ok
             if (dep.status != StatusTarefa.CONCLUIDA) {
                 throw RegrasNegocioException(
                     "Não é possível concluir: a tarefa '${dep.titulo}' ainda está pendente.",
